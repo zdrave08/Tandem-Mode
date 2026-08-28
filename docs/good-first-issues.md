@@ -52,22 +52,7 @@ argument lists saved profiles.
 
 ---
 
-### 4. Linux/macOS clipboard support for `/paste`
-
-**Problem:** `/paste` (`src/agent/clipboard.ts`) only works on Windows today
-(PowerShell + .NET `Clipboard`/`Bitmap`). The rest of the CLI runs fine
-cross-platform.
-
-**Ask:** Add a `saveClipboardImage` implementation for macOS (`pngpaste`, or
-`osascript` if that's not installed) and Linux (`xclip -selection clipboard -t
-image/png -o`), following the same `(destPath) => Promise<boolean>` shape.
-Document what needs to be installed on each platform for it to work.
-
-**Files:** `src/agent/clipboard.ts`.
-
----
-
-### 5. Notification hook on task/orchestration completion
+### 4. Notification hook on task/orchestration completion
 
 **Problem:** `/plan` runs can take a while. There's no way to know it's done
 without watching the terminal.
@@ -83,7 +68,7 @@ what to put there.
 
 ---
 
-### 6. Reviewer should see build/test results, not just the git diff
+### 5. Reviewer should see build/test results, not just the git diff
 
 **Problem:** The reviewer (`src/orchestrator/reviewer.ts`) currently only
 gets the original task, the plan, and `git diff`. It can't tell if the change
@@ -100,7 +85,7 @@ runner) — worth designing once and reusing in both places.
 
 ---
 
-### 7. Linux/macOS API key storage
+### 6. Linux/macOS API key storage
 
 **Problem:** `src/config/credentials.ts` only works on Windows (DPAPI via
 PowerShell). We tried a cross-platform library here first (`cross-keychain`)

@@ -53,22 +53,7 @@ lista sačuvane profile.
 
 ---
 
-### 4. Linux/macOS clipboard podrška za `/paste`
-
-**Problem:** `/paste` (`src/agent/clipboard.ts`) danas radi samo na Windows-u
-(PowerShell + .NET `Clipboard`/`Bitmap`). Ostatak CLI-ja radi normalno
-cross-platform.
-
-**Zadatak:** Dodaj `saveClipboardImage` implementaciju za macOS (`pngpaste`,
-ili `osascript` ako to nije instalirano) i Linux (`xclip -selection clipboard
--t image/png -o`), prateći isti `(destPath) => Promise<boolean>` oblik.
-Dokumentuj šta treba instalirati na svakoj platformi da bi radilo.
-
-**Fajlovi:** `src/agent/clipboard.ts`.
-
----
-
-### 5. Notification hook na završetak taska/orkestracije
+### 4. Notification hook na završetak taska/orkestracije
 
 **Problem:** `/plan` pokretanja mogu potrajati. Nema načina da se zna da je
 gotovo bez gledanja terminala.
@@ -84,7 +69,7 @@ primer u dokumentaciji šta tu staviti.
 
 ---
 
-### 6. Reviewer treba da vidi build/test rezultate, ne samo git diff
+### 5. Reviewer treba da vidi build/test rezultate, ne samo git diff
 
 **Problem:** Reviewer (`src/orchestrator/reviewer.ts`) trenutno dobija samo
 originalni zadatak, plan, i `git diff`. Ne može da zna da li se izmena
@@ -102,7 +87,7 @@ jednom i koristiti na oba mesta.
 
 ---
 
-### 7. Linux/macOS čuvanje API ključa
+### 6. Linux/macOS čuvanje API ključa
 
 **Problem:** `src/config/credentials.ts` radi samo na Windows-u (DPAPI preko
 PowerShell-a). Prvo smo probali cross-platform biblioteku (`cross-keychain`)

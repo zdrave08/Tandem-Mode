@@ -21,7 +21,7 @@ const HELP_TEXT = `Komande:
   /new                                        nova sesija
   /fork                                       nova sesija sa kopijom trenutne istorije
   /resume [id]                                nastavi poslednju ili navedenu sesiju
-  /paste [poruka]                             pošalji sliku iz clipboard-a (Windows)
+  /paste [poruka]                             pošalji sliku iz sistemskog clipboard-a
   /clear                                      očisti ekran
   /help                                       ova lista
   /exit                                       izlaz`;

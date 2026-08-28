@@ -46,7 +46,9 @@ test. Reported as-is, not adjusted to fit expectations.
   cache actually hits. Measured live: cache-hit tokens grew call over call
   within a single `/plan` run.
 - **Vision** — `view_image` lets the agent look at a screenshot you point it
-  to; `/paste` grabs an image straight from the Windows clipboard.
+  to; `/paste` grabs an image from the system clipboard. Windows uses
+  PowerShell/.NET, Linux requires `xclip`, and macOS uses `pngpaste` with an
+  `osascript` fallback when `pngpaste` is absent.
 - **Web search** — isolated calls to DeepSeek's Responses API when the agent
   needs something outside the repo (an error message, a library's docs).
 - **Session persistence** — every session is a JSONL file; `/resume` continues
@@ -127,7 +129,7 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 | `/new` | Start a fresh session |
 | `/fork` | New session, carrying over the current history |
 | `/resume [id]` | Continue the latest (or a named) session |
-| `/paste [message]` | Send a Windows-clipboard image to the agent |
+| `/paste [message]` | Send a clipboard image to the agent (PowerShell/.NET, `xclip`, or `pngpaste`/`osascript` by platform) |
 | `/clear` | Clear the screen |
 | `/help` | This list |
 | `/exit` | Quit |

@@ -49,7 +49,9 @@ Prijavljeno onako kako jeste, ne prilagođeno očekivanjima.
   DeepSeek-ov keš stvarno pogađa. Izmereno uživo: cache-hit tokeni su rasli
   iz poziva u poziv unutar jednog `/plan` pokretanja.
 - **Vision** — `view_image` omogućava agentu da pogleda screenshot na koji
-  ga uputiš; `/paste` uzima sliku direktno iz Windows clipboard-a.
+  ga uputiš; `/paste` uzima sliku iz sistemskog clipboard-a. Na Windows-u
+  koristi PowerShell/.NET, na Linux-u `xclip`, a na macOS-u `pngpaste` uz
+  `osascript` rezervu.
 - **Web search** — izolovani pozivi ka DeepSeek Responses API-ju kad agentu
   treba nešto van repozitorijuma (error poruka, dokumentacija biblioteke).
 - **Perzistencija sesije** — svaka sesija je JSONL fajl; `/resume` nastavlja
@@ -129,7 +131,7 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 | `/new` | Nova sesija |
 | `/fork` | Nova sesija sa kopijom trenutne istorije |
 | `/resume [id]` | Nastavi poslednju (ili navedenu) sesiju |
-| `/paste [poruka]` | Pošalji sliku iz Windows clipboard-a agentu |
+| `/paste [poruka]` | Pošalji sliku iz sistemskog clipboard-a agentu |
 | `/clear` | Očisti ekran |
 | `/help` | Ova lista |
 | `/exit` | Izlaz |
