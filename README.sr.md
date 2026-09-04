@@ -10,7 +10,7 @@
 Terminalski coding agent napravljen posebno za DeepSeek API — ne generički
 LLM harness u koji je DeepSeek naknadno ugurana. Interaktivni REPL,
 planner/worker/reviewer orkestracija, cache-aware arhitektura prompta, i
-Windows kao prioritet od prvog dana.
+podjednaka podrška za Windows, macOS i Linux.
 
 > **Nezavisan open-source projekat. Nije povezan sa DeepSeek-om niti od
 > njega podržan.**
@@ -49,7 +49,8 @@ Prijavljeno onako kako jeste, ne prilagođeno očekivanjima.
   DeepSeek-ov keš stvarno pogađa. Izmereno uživo: cache-hit tokeni su rasli
   iz poziva u poziv unutar jednog `/plan` pokretanja.
 - **Vision** — `view_image` omogućava agentu da pogleda screenshot na koji
-  ga uputiš; `/paste` uzima sliku direktno iz Windows clipboard-a.
+  ga uputiš; `/paste` uzima sliku direktno iz clipboard-a (Windows, macOS,
+  i Linux preko X11/`xclip` ili Wayland/`wl-clipboard`).
 - **Web search** — izolovani pozivi ka DeepSeek Responses API-ju kad agentu
   treba nešto van repozitorijuma (error poruka, dokumentacija biblioteke).
 - **Perzistencija sesije** — svaka sesija je JSONL fajl; `/resume` nastavlja
@@ -65,9 +66,9 @@ Prijavljeno onako kako jeste, ne prilagođeno očekivanjima.
   startu ako si trenutno u peak periodu.
 - **ESC za prekid** — čisto prekida poziv u toku (i bilo koju shell komandu
   koja radi), čuvajući ono što je do tada generisano.
-- **Windows prioritet** — shell alat pokreće PowerShell nativno, izmene
-  fajlova čuvaju originalni CRLF/LF stil, putanje se svuda tretiraju preko
-  `path.resolve`.
+- **Cross-platform** — shell alat pokreće PowerShell nativno na Windows-u i
+  `sh` na macOS/Linux-u, izmene fajlova čuvaju originalni CRLF/LF stil,
+  putanje se svuda tretiraju preko `path.resolve`.
 
 ## Brzi početak
 
@@ -90,11 +91,16 @@ pnpm dev "objasni sta radi ovaj repo" --yes   # jedan potez
 
 Pri prvom pokretanju bićeš pitan za DeepSeek API ključ (napravi ga na
 [platform.deepseek.com](https://platform.deepseek.com)) i podrazumevani
-model/reasoning effort. Na Windows-u se ključ čuva DPAPI-šifrovan (vezan za
-tvoj OS nalog, ista zaštita na kojoj se zasniva i sam Credential Manager) u
-`%LOCALAPPDATA%\TandemMode\credentials.dat` — nikad u config fajlu ili logu.
-Linux/macOS čuvanje još nije implementirano (`DEEPSEEK_API_KEY` radi svuda
-u međuvremenu) — videti good-first-issues.
+model/reasoning effort. Ključ se čuva u OS-ovom bezbednom skladištu
+kredencijala — nikad u config fajlu ili logu:
+
+- **Windows** — DPAPI-šifrovan (vezan za tvoj OS nalog) u
+  `%LOCALAPPDATA%\TandemMode\credentials.dat`.
+- **macOS** — login Keychain, preko ugrađenog `security` CLI-ja.
+- **Linux** — Secret Service (gnome-keyring, KWallet ili slično), preko
+  `secret-tool` (instaliraj `libsecret-tools` ako nedostaje).
+
+`DEEPSEEK_API_KEY` radi svuda i uvek ima prioritet, za CI upotrebu.
 
 ## Upotreba
 
@@ -129,7 +135,7 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 | `/new` | Nova sesija |
 | `/fork` | Nova sesija sa kopijom trenutne istorije |
 | `/resume [id]` | Nastavi poslednju (ili navedenu) sesiju |
-| `/paste [poruka]` | Pošalji sliku iz Windows clipboard-a agentu |
+| `/paste [poruka]` | Pošalji sliku iz clipboard-a agentu |
 | `/clear` | Očisti ekran |
 | `/help` | Ova lista |
 | `/exit` | Izlaz |
@@ -171,9 +177,9 @@ Slojevito: **sesija** (komande u REPL-u) > **projekat**
 }
 ```
 
-API ključ se nikad ne čuva u ovim fajlovima — živi DPAPI-šifrovan na
-Windows-u (ili u `DEEPSEEK_API_KEY` env promenljivoj, koja ima prioritet,
-za CI upotrebu).
+API ključ se nikad ne čuva u ovim fajlovima — živi u OS-ovom skladištu
+kredencijala (ili u `DEEPSEEK_API_KEY` env promenljivoj, koja ima
+prioritet, za CI upotrebu).
 
 ## Razvoj
 

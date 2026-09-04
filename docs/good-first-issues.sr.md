@@ -53,21 +53,6 @@ lista sačuvane profile.
 
 ---
 
-### 4. Linux/macOS clipboard podrška za `/paste`
-
-**Problem:** `/paste` (`src/agent/clipboard.ts`) danas radi samo na Windows-u
-(PowerShell + .NET `Clipboard`/`Bitmap`). Ostatak CLI-ja radi normalno
-cross-platform.
-
-**Zadatak:** Dodaj `saveClipboardImage` implementaciju za macOS (`pngpaste`,
-ili `osascript` ako to nije instalirano) i Linux (`xclip -selection clipboard
--t image/png -o`), prateći isti `(destPath) => Promise<boolean>` oblik.
-Dokumentuj šta treba instalirati na svakoj platformi da bi radilo.
-
-**Fajlovi:** `src/agent/clipboard.ts`.
-
----
-
 ### 5. Notification hook na završetak taska/orkestracije
 
 **Problem:** `/plan` pokretanja mogu potrajati. Nema načina da se zna da je
@@ -99,23 +84,3 @@ jednom i koristiti na oba mesta.
 
 **Fajlovi:** `src/orchestrator/orchestrate.ts`, `src/orchestrator/reviewer.ts`,
 `src/config/schema.ts`.
-
----
-
-### 7. Linux/macOS čuvanje API ključa
-
-**Problem:** `src/config/credentials.ts` radi samo na Windows-u (DPAPI preko
-PowerShell-a). Prvo smo probali cross-platform biblioteku (`cross-keychain`)
-i odbacili je — njena auto-detekcija backend-a je trošila 15-18 sekundi po
-pozivu na Windows-u čak i sa native bindingom prisutnim i izabranim, što je
-neprihvatljivo kašnjenje pri startu za CLI. Direktni DPAPI pozivi su ~500ms.
-
-**Zadatak:** Dodaj `getStoredApiKey`/`setStoredApiKey`/`deleteStoredApiKey`
-implementacije za macOS (`security` CLI, dolazi sa OS-om) i Linux
-(`libsecret`/`secret-tool`, ili ekvivalent gnome-keyring-a), prateći isti
-oblik od tri funkcije. Drži je brzom — izmeri je, ceo razlog zašto ovaj fajl
-ne koristi generičku biblioteku je što su se "cross-platform" i "brzo na
-svakoj platformi" pokazali kao suprotstavljeni. `DEEPSEEK_API_KEY` već
-pokriva korisnike van Windows-a u međuvremenu.
-
-**Fajlovi:** `src/config/credentials.ts`.

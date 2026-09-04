@@ -9,8 +9,8 @@
 
 A terminal coding agent built specifically for the DeepSeek API — not a generic
 LLM harness with DeepSeek bolted on. Interactive REPL, planner/worker/reviewer
-orchestration, cache-aware prompt architecture, and Windows-first from the
-start.
+orchestration, cache-aware prompt architecture, and first-class support for
+Windows, macOS, and Linux.
 
 > **Independent open-source project. Not affiliated with or endorsed by
 > DeepSeek.**
@@ -46,7 +46,8 @@ test. Reported as-is, not adjusted to fit expectations.
   cache actually hits. Measured live: cache-hit tokens grew call over call
   within a single `/plan` run.
 - **Vision** — `view_image` lets the agent look at a screenshot you point it
-  to; `/paste` grabs an image straight from the Windows clipboard.
+  to; `/paste` grabs an image straight from the clipboard (Windows, macOS,
+  and Linux via X11/`xclip` or Wayland/`wl-clipboard`).
 - **Web search** — isolated calls to DeepSeek's Responses API when the agent
   needs something outside the repo (an error message, a library's docs).
 - **Session persistence** — every session is a JSONL file; `/resume` continues
@@ -63,9 +64,9 @@ test. Reported as-is, not adjusted to fit expectations.
   startup if you're currently in a peak-pricing window.
 - **ESC to interrupt** — cancels the in-flight call (and any running shell
   command) cleanly, keeping whatever was generated so far.
-- **Windows-first** — the shell tool runs PowerShell natively, file edits
-  preserve the original CRLF/LF line ending style, paths are handled with
-  `path.resolve` throughout.
+- **Cross-platform** — the shell tool runs PowerShell natively on Windows and
+  `sh` on macOS/Linux, file edits preserve the original CRLF/LF line ending
+  style, paths are handled with `path.resolve` throughout.
 
 ## Quick start
 
@@ -88,11 +89,16 @@ pnpm dev "explain what this repo does" --yes   # one-shot
 
 On first run you'll be asked for a DeepSeek API key (get one at
 [platform.deepseek.com](https://platform.deepseek.com)) and a default
-model/reasoning effort. On Windows the key is stored DPAPI-encrypted
-(tied to your OS user account, same protection Credential Manager itself
-relies on) in `%LOCALAPPDATA%\TandemMode\credentials.dat` — never in a
-config file or log. Linux/macOS storage isn't implemented yet (`DEEPSEEK_API_KEY`
-works everywhere in the meantime) — see good-first-issues.
+model/reasoning effort. The key is stored in your OS's own secure credential
+store — never in a config file or log:
+
+- **Windows** — DPAPI-encrypted (tied to your OS user account) in
+  `%LOCALAPPDATA%\TandemMode\credentials.dat`.
+- **macOS** — the login Keychain, via the built-in `security` CLI.
+- **Linux** — the Secret Service (gnome-keyring, KWallet, or similar), via
+  `secret-tool` (install `libsecret-tools` if it's missing).
+
+`DEEPSEEK_API_KEY` works everywhere and always takes priority, for CI use.
 
 ## Usage
 
@@ -127,7 +133,7 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 | `/new` | Start a fresh session |
 | `/fork` | New session, carrying over the current history |
 | `/resume [id]` | Continue the latest (or a named) session |
-| `/paste [message]` | Send a Windows-clipboard image to the agent |
+| `/paste [message]` | Send a clipboard image to the agent |
 | `/clear` | Clear the screen |
 | `/help` | This list |
 | `/exit` | Quit |
@@ -168,8 +174,8 @@ in the current directory) > **global** (`~/.tandem/config.json`).
 }
 ```
 
-The API key is never stored in these files — it lives DPAPI-encrypted on
-Windows (or `DEEPSEEK_API_KEY` env var, which takes priority, for CI use).
+The API key is never stored in these files — it lives in the OS credential
+store (or `DEEPSEEK_API_KEY` env var, which takes priority, for CI use).
 
 ## Development
 

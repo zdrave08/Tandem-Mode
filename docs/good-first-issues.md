@@ -52,21 +52,6 @@ argument lists saved profiles.
 
 ---
 
-### 4. Linux/macOS clipboard support for `/paste`
-
-**Problem:** `/paste` (`src/agent/clipboard.ts`) only works on Windows today
-(PowerShell + .NET `Clipboard`/`Bitmap`). The rest of the CLI runs fine
-cross-platform.
-
-**Ask:** Add a `saveClipboardImage` implementation for macOS (`pngpaste`, or
-`osascript` if that's not installed) and Linux (`xclip -selection clipboard -t
-image/png -o`), following the same `(destPath) => Promise<boolean>` shape.
-Document what needs to be installed on each platform for it to work.
-
-**Files:** `src/agent/clipboard.ts`.
-
----
-
 ### 5. Notification hook on task/orchestration completion
 
 **Problem:** `/plan` runs can take a while. There's no way to know it's done
@@ -97,23 +82,3 @@ runner) — worth designing once and reusing in both places.
 
 **Files:** `src/orchestrator/orchestrate.ts`, `src/orchestrator/reviewer.ts`,
 `src/config/schema.ts`.
-
----
-
-### 7. Linux/macOS API key storage
-
-**Problem:** `src/config/credentials.ts` only works on Windows (DPAPI via
-PowerShell). We tried a cross-platform library here first (`cross-keychain`)
-and dropped it — its backend auto-detection took 15-18 seconds per call on
-Windows even with the native binding present and selected, which is an
-unacceptable startup delay for a CLI. Direct DPAPI calls are ~500ms instead.
-
-**Ask:** Add `getStoredApiKey`/`setStoredApiKey`/`deleteStoredApiKey`
-implementations for macOS (the `security` CLI, which ships with the OS) and
-Linux (`libsecret`/`secret-tool`, or a `gnome-keyring` equivalent), following
-the same three-function shape. Keep it fast — measure it, the whole reason
-this file doesn't use a generic library is that "cross-platform" and "fast on
-each platform" turned out to be in tension. `DEEPSEEK_API_KEY` already covers
-non-Windows users in the meantime.
-
-**Files:** `src/config/credentials.ts`.
