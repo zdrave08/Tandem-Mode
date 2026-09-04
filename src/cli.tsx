@@ -3,7 +3,8 @@ import React, { useEffect, useState } from "react";
 import { render, Text, Box, useApp } from "ink";
 import readline from "node:readline";
 import path from "node:path";
-import { mkdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { mkdir, readFile } from "node:fs/promises";
 import { resolveApiKey, resolveBaseUrl } from "./config/env.js";
 import { loadConfig } from "./config/store.js";
 import { DEFAULT_CONFIG } from "./config/schema.js";
@@ -483,9 +484,21 @@ function parseArgv(argv: string[]): ParsedArgv {
   return parsed;
 }
 
+async function printVersion(): Promise<void> {
+  const packageJsonPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+  const { version } = JSON.parse(await readFile(packageJsonPath, "utf8")) as { version: string };
+  console.log(version);
+}
+
 async function main(): Promise<void> {
+  const rawArgv = process.argv.slice(2);
+  if (rawArgv.includes("--version") || rawArgv.includes("-v")) {
+    await printVersion();
+    return;
+  }
+
   const cwd = process.cwd();
-  const parsed = parseArgv(process.argv.slice(2));
+  const parsed = parseArgv(rawArgv);
 
   const config = await loadConfig(cwd);
   let apiKey = await resolveApiKey();

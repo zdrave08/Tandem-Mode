@@ -1,6 +1,6 @@
 {
   "name": "tandem-mode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DeepSeek coding CLI — planner/worker/reviewer agentic loop",
   "type": "module",
   "license": "MIT",
