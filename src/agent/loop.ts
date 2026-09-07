@@ -38,6 +38,12 @@ function isAbortError(err: unknown): boolean {
   return err instanceof Error && err.name === "AbortError";
 }
 
+// Reasoning modeli (posebno reasoningEffort: "max") mogu ući u dugu petlju
+// razmišljanja i generisati stotine hiljada tokena pre finalnog odgovora.
+// Bez ovog kapa `reasoning += ev.delta` raste neograničeno po tokenu i
+// blokira heap čak i na malim projektima, nezavisno od izlaza alata.
+const MAX_REASONING_CHARS = 200_000;
+
 /**
  * `messages` mora već sadržati system + početni user zahtev (i istoriju ako
  * se nastavlja sesija) — pozivalac je odgovoran da TE poruke upiše u sesiju
@@ -78,7 +84,9 @@ export async function* runAgentLoop(
       })) {
         switch (ev.type) {
           case "reasoning_delta":
-            reasoning += ev.delta;
+            if (reasoning.length < MAX_REASONING_CHARS) {
+              reasoning += ev.delta;
+            }
             yield { type: "reasoning_delta", delta: ev.delta };
             break;
           case "content_delta":

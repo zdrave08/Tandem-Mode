@@ -35,6 +35,11 @@ export interface TurnConfig {
   signal?: AbortSignal;
 }
 
+// Prikazuje se samo zadnjih N karaktera dok model razmišlja — dovoljno za
+// "Thinking…" preview, a sprečava da Ink na svaki token re-renderuje/re-lejautuje
+// celu (potencijalno ogromnu) rastuću stringu, što je O(n²) trošak i može oboriti heap.
+const REASONING_DISPLAY_CAP = 4_000;
+
 interface ToolLogEntry {
   id: string;
   name: string;
@@ -96,7 +101,10 @@ function TurnView({
       function handleEvent(event: AgentEvent): void {
         switch (event.type) {
           case "reasoning_delta":
-            setReasoning((prev) => prev + event.delta);
+            setReasoning((prev) => {
+              const next = prev + event.delta;
+              return next.length > REASONING_DISPLAY_CAP ? next.slice(-REASONING_DISPLAY_CAP) : next;
+            });
             break;
           case "content_delta":
             setContent((prev) => prev + event.delta);
