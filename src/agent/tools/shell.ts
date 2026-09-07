@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import type { ToolDefinition } from "./types.js";
 
 const MAX_OUTPUT_CHARS = 20_000;
+const HARD_MAX_BUFFER_CHARS = 5_000_000;
 const TIMEOUT_MS = 120_000;
 
 // Konzervativna bela lista — read-only komande koje ne traže odobrenje.
@@ -49,12 +50,23 @@ function runShell(
     };
     signal?.addEventListener("abort", onAbort, { once: true });
 
-    child.stdout.on("data", (chunk: Buffer) => {
+    const onData = (chunk: Buffer): void => {
+      if (settled) return;
       output += chunk.toString("utf8");
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      output += chunk.toString("utf8");
-    });
+      if (output.length > HARD_MAX_BUFFER_CHARS) {
+        settled = true;
+        clearTimeout(timer);
+        signal?.removeEventListener("abort", onAbort);
+        child.kill();
+        reject(
+          new Error(
+            `Komanda je prekinuta jer je izlaz premašio ${HARD_MAX_BUFFER_CHARS} karaktera (verovatno čita binarne/velike fajlove umesto teksta).`
+          )
+        );
+      }
+    };
+    child.stdout.on("data", onData);
+    child.stderr.on("data", onData);
     child.on("error", (err) => {
       if (settled) return;
       settled = true;

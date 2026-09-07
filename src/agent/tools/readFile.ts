@@ -1,8 +1,9 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import type { ToolDefinition } from "./types.js";
 
 const MAX_LINES = 2000;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 export const readFileTool: ToolDefinition = {
   name: "read_file",
@@ -25,6 +26,13 @@ export const readFileTool: ToolDefinition = {
     const resolved = path.resolve(ctx.cwd, filePath);
 
     try {
+      const stats = await stat(resolved);
+      if (stats.size > MAX_FILE_BYTES) {
+        return {
+          output: `Fajl je prevelik za čitanje (${stats.size} bajtova, limit ${MAX_FILE_BYTES}). Verovatno nije tekstualni izvorni fajl (npr. state/binarni/vendored fajl) — proveri putanju ili koristi shell alat sa limitiranim izlazom.`,
+          isError: true,
+        };
+      }
       const raw = await readFile(resolved, "utf8");
       const lines = raw.split(/\r\n|\n/);
       const slice = lines.slice(offset - 1, offset - 1 + limit);
