@@ -22,21 +22,44 @@ export const gitDiffTool: ToolDefinition = {
     const scopePath = args["path"] ? String(args["path"]) : undefined;
     const gitArgs = ["diff", ...(staged ? ["--cached"] : []), ...(scopePath ? ["--", scopePath] : [])];
 
-    // Plain `git diff` ne prikazuje potpuno nove (untracked) fajlove.
-    // --intent-to-add ih markira u indeksu bez stage-ovanja sadržaja, pa se
-    // pojave u diff-u kao dodati fajlovi — bezopasno i reverzibilno.
-    try {
-      await execFileAsync("git", ["add", "--intent-to-add", "--all", ...(scopePath ? ["--", scopePath] : [])], {
-        cwd: ctx.cwd,
-      });
-    } catch {
-      // Nije git repo ili git nije dostupan — poziv ispod će to jasno prijaviti.
-    }
-
     try {
       const { stdout } = await execFileAsync("git", gitArgs, { cwd: ctx.cwd, maxBuffer: 10 * 1024 * 1024 });
-      const output = stdout.length > MAX_OUTPUT_CHARS ? stdout.slice(0, MAX_OUTPUT_CHARS) + "\n... (truncated)" : stdout;
-      return { output: output.trim() || "(no changes)", isError: false };
+      if (staged) {
+        const output = stdout.length > MAX_OUTPUT_CHARS ? stdout.slice(0, MAX_OUTPUT_CHARS) + "\n... (truncated)" : stdout;
+        return { output: output.trim() || "(no changes)", isError: false };
+      }
+
+      const { stdout: untracked } = await execFileAsync(
+        "git",
+        ["ls-files", "--others", "--exclude-standard", "-z", ...(scopePath ? ["--", scopePath] : [])],
+        { cwd: ctx.cwd },
+      );
+      const files = untracked.split("\0").filter(Boolean);
+      const untrackedDiffs = new Array<string>(files.length).fill("");
+      let nextFile = 0;
+      const worker = async () => {
+        while (nextFile < files.length) {
+          const index = nextFile++;
+          const file = files[index];
+          if (!file) {
+            continue;
+          }
+          try {
+            await execFileAsync("git", ["diff", "--no-index", "--", "/dev/null", file], {
+              cwd: ctx.cwd,
+              maxBuffer: 10 * 1024 * 1024,
+            });
+          } catch (err) {
+            untrackedDiffs[index] = (err as { stdout?: string }).stdout ?? "";
+          }
+        }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(8, files.length) }, () => worker()),
+      );
+      const output = [stdout, ...untrackedDiffs].join("");
+      const truncated = output.length > MAX_OUTPUT_CHARS ? output.slice(0, MAX_OUTPUT_CHARS) + "\n... (truncated)" : output;
+      return { output: truncated.trim() || "(no changes)", isError: false };
     } catch (err) {
       return { output: `git diff error: ${(err as Error).message}`, isError: true };
     }
