@@ -5,14 +5,14 @@ import type { ToolDefinition } from "./types.js";
 export const viewImageTool: ToolDefinition = {
   name: "view_image",
   description:
-    "Pogledaj sliku (screenshot buga, mockup, dijagram) i dobij tekstualni opis ili odgovor na pitanje o njoj. Koristi kad korisnik pomene screenshot ili sliku i da putanju do nje. Podržani formati: JPEG, PNG, GIF, WebP.",
+    "View an image (bug screenshot, mockup, diagram) and get a text description or an answer to a question about it. Use when the user mentions a screenshot or image and gives its path. Supported formats: JPEG, PNG, GIF, WebP.",
   parameters: {
     type: "object",
     properties: {
-      path: { type: "string", description: "Putanja do slike." },
+      path: { type: "string", description: "Path to the image." },
       question: {
         type: "string",
-        description: "Šta konkretno pitati o slici. Podrazumevano: opšti opis fokusiran na moguću grešku.",
+        description: "What specifically to ask about the image. Defaults to a general description focused on a possible error.",
       },
     },
     required: ["path"],
@@ -30,7 +30,7 @@ export const viewImageTool: ToolDefinition = {
       ctx.usage.add("deepseek-v4-flash", usage);
       return { output: text, isError: false };
     } catch (err) {
-      return { output: `Greška pri analizi slike: ${(err as Error).message}`, isError: true };
+      return { output: `Image analysis error: ${(err as Error).message}`, isError: true };
     }
   },
 };

@@ -4,11 +4,11 @@ import type { ToolDefinition } from "./types.js";
 export const webSearchTool: ToolDefinition = {
   name: "web_search",
   description:
-    "Pretraži internet za trenutne informacije — error poruke, dokumentaciju biblioteka, novosti. Koristi kad odgovor zahteva nešto što nije u kodu ili repo kontekstu.",
+    "Search the web for current information — error messages, library documentation, news. Use when the answer requires something that is not in the code or repo context.",
   parameters: {
     type: "object",
     properties: {
-      query: { type: "string", description: "Upit za pretragu." },
+      query: { type: "string", description: "Search query." },
     },
     required: ["query"],
   },
@@ -22,7 +22,7 @@ export const webSearchTool: ToolDefinition = {
       ctx.usage.add("deepseek-v4-flash", usage);
       return { output: text, isError: false };
     } catch (err) {
-      return { output: `Greška pri pretrazi: ${(err as Error).message}`, isError: true };
+      return { output: `Search error: ${(err as Error).message}`, isError: true };
     }
   },
 };

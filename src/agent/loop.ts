@@ -170,7 +170,7 @@ export async function* runAgentLoop(
         const toolMsg: ChatMessage = {
           role: "tool",
           toolCallId: call.id,
-          content: `Nepoznat alat: ${call.function.name}`,
+          content: `Unknown tool: ${call.function.name}`,
         };
         messages.push(toolMsg);
         await appendSessionMessage(opts.session, toolMsg);
@@ -186,7 +186,7 @@ export async function* runAgentLoop(
           const toolMsg: ChatMessage = {
             role: "tool",
             toolCallId: call.id,
-            content: "Korisnik je odbio izvršavanje ovog alata.",
+            content: "The user denied running this tool.",
           };
           messages.push(toolMsg);
           await appendSessionMessage(opts.session, toolMsg);

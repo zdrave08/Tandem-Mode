@@ -3,20 +3,20 @@ import type { TandemEnv } from "../config/env.js";
 import type { UsageInfo } from "../deepseek/types.js";
 import { isReviewResult, type Plan, type ReviewResult } from "./types.js";
 
-const REVIEWER_SYSTEM_PROMPT = `Ti si reviewer u Tandem Mode coding agentu. Dobijaš originalni zadatak,
-plan koji je worker(i) izvršio, i git diff stvarnih izmena. Proveri da li
-diff zaista ispunjava zadatak i kriterijume prihvatanja iz plana, da nema
-nepotrebnih izmena, i da je kod razuman. Ako je priložen rezultat provere
-(build/test), exit code različit od 0 znači da izmena ne prolazi — tada ne
-odobravaj, a u "corrections" navedi konkretnu grešku iz izlaza.
+const REVIEWER_SYSTEM_PROMPT = `You are the reviewer in the Tandem Mode coding agent. You receive the original task,
+the plan the worker(s) carried out, and the git diff of the actual changes. Check whether the
+diff really fulfills the task and the plan's acceptance criteria, contains no
+unnecessary changes, and that the code is reasonable. If a check result
+(build/test) is attached, a non-zero exit code means the change does not pass — in that case do not
+approve, and name the concrete error from the output in "corrections".
 
-Odgovori ISKLJUČIVO validnim JSON-om, bez markdown ograda, tačno ove šeme:
+Respond ONLY with valid JSON, with no markdown fences, in exactly this schema:
 {
   "approved": true|false,
-  "notes": "kratko obrazloženje",
+  "notes": "brief justification",
   "corrections": [{ "description": "...", "files": ["..."] }]
 }
-"corrections" je prazan niz ako je approved true.`;
+"corrections" is an empty array if approved is true.`;
 
 const MAX_ATTEMPTS = 2;
 const MAX_VERIFY_CHARS = 6000;
@@ -29,8 +29,8 @@ export interface VerifyResult {
 
 function formatVerify(verify: VerifyResult): string {
   // Greške build/test alata su obično na kraju izlaza, pa čuvamo rep, ne glavu.
-  const out = verify.output.length > MAX_VERIFY_CHARS ? "...(isečeno)\n" + verify.output.slice(-MAX_VERIFY_CHARS) : verify.output;
-  return `\n\nRezultat provere (${verify.command}), exit code ${verify.exitCode ?? "n/a (nije pokrenuto)"}:\n${out || "(nema izlaza)"}`;
+  const out = verify.output.length > MAX_VERIFY_CHARS ? "...(truncated)\n" + verify.output.slice(-MAX_VERIFY_CHARS) : verify.output;
+  return `\n\nCheck result (${verify.command}), exit code ${verify.exitCode ?? "n/a (not run)"}:\n${out || "(no output)"}`;
 }
 
 export async function runReviewer(
@@ -52,7 +52,7 @@ export async function runReviewer(
         { role: "system", content: REVIEWER_SYSTEM_PROMPT },
         {
           role: "user",
-          content: `Originalni zadatak:\n${originalTask}\n\nPlan:\n${JSON.stringify(plan, null, 2)}\n\nGit diff:\n${gitDiff.slice(0, 15000)}${verify ? formatVerify(verify) : ""}`,
+          content: `Original task:\n${originalTask}\n\nPlan:\n${JSON.stringify(plan, null, 2)}\n\nGit diff:\n${gitDiff.slice(0, 15000)}${verify ? formatVerify(verify) : ""}`,
         },
       ],
       ...(signal ? { signal } : {}),
@@ -62,11 +62,11 @@ export async function runReviewer(
     try {
       parsed = JSON.parse(response.content);
     } catch {
-      lastError = new Error(`Reviewer nije vratio validan JSON (pokušaj ${attempt}):\n${response.content.slice(0, 500)}`);
+      lastError = new Error(`Reviewer did not return valid JSON (attempt ${attempt}):\n${response.content.slice(0, 500)}`);
       continue;
     }
     if (!isReviewResult(parsed)) {
-      lastError = new Error(`Reviewer JSON ne prati očekivanu šemu (pokušaj ${attempt}):\n${response.content.slice(0, 500)}`);
+      lastError = new Error(`Reviewer JSON does not follow the expected schema (attempt ${attempt}):\n${response.content.slice(0, 500)}`);
       continue;
     }
 
@@ -78,5 +78,5 @@ export async function runReviewer(
     return { result, usage: response.usage };
   }
 
-  throw lastError ?? new Error("Reviewer nije uspeo posle više pokušaja.");
+  throw lastError ?? new Error("Reviewer failed after multiple attempts.");
 }

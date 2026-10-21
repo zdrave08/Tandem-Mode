@@ -18,14 +18,14 @@ function countOccurrences(haystack: string, needle: string): number {
 export const editTool: ToolDefinition = {
   name: "edit",
   description:
-    "Zameni tačan string u fajlu novim stringom. `oldString` mora biti jedinstven u fajlu osim ako je replaceAll=true. Čuva originalni stil kraja linije (CRLF/LF).",
+    "Replace an exact string in a file with a new string. `oldString` must be unique in the file unless replaceAll=true. Preserves the original line-ending style (CRLF/LF).",
   parameters: {
     type: "object",
     properties: {
-      path: { type: "string", description: "Putanja do fajla." },
-      oldString: { type: "string", description: "Tačan tekst koji se menja (sa dovoljno konteksta da bude jedinstven)." },
-      newString: { type: "string", description: "Tekst kojim se zamenjuje." },
-      replaceAll: { type: "boolean", description: "Zameni sve pojave umesto zahteva za jedinstvenost." },
+      path: { type: "string", description: "Path to the file." },
+      oldString: { type: "string", description: "Exact text to replace (with enough context to be unique)." },
+      newString: { type: "string", description: "Replacement text." },
+      replaceAll: { type: "boolean", description: "Replace all occurrences instead of requiring uniqueness." },
     },
     required: ["path", "oldString", "newString"],
   },
@@ -39,14 +39,14 @@ export const editTool: ToolDefinition = {
     const resolved = path.resolve(ctx.cwd, filePath);
 
     if (oldString === newString) {
-      return { output: "oldString i newString su identični — nema izmene.", isError: true };
+      return { output: "oldString and newString are identical — nothing to change.", isError: true };
     }
 
     let raw: string;
     try {
       raw = await readFile(resolved, "utf8");
     } catch (err) {
-      return { output: `Greška pri čitanju ${resolved}: ${(err as Error).message}`, isError: true };
+      return { output: `Error reading ${resolved}: ${(err as Error).message}`, isError: true };
     }
 
     const eol = raw.includes("\r\n") ? "\r\n" : "\n";
@@ -56,11 +56,11 @@ export const editTool: ToolDefinition = {
 
     const occurrences = countOccurrences(normalized, needle);
     if (occurrences === 0) {
-      return { output: `oldString nije pronađen u ${filePath}.`, isError: true };
+      return { output: `oldString not found in ${filePath}.`, isError: true };
     }
     if (occurrences > 1 && !replaceAll) {
       return {
-        output: `oldString se pojavljuje ${occurrences} puta u ${filePath} — dodaj više konteksta da bude jedinstven, ili prosledi replaceAll=true.`,
+        output: `oldString appears ${occurrences} times in ${filePath} — add more context to make it unique, or pass replaceAll=true.`,
         isError: true,
       };
     }
@@ -74,11 +74,11 @@ export const editTool: ToolDefinition = {
     try {
       await writeFile(resolved, finalContent, "utf8");
     } catch (err) {
-      return { output: `Greška pri upisu ${resolved}: ${(err as Error).message}`, isError: true };
+      return { output: `Error writing ${resolved}: ${(err as Error).message}`, isError: true };
     }
 
     return {
-      output: `Izmenjeno ${filePath} (${occurrences} ${occurrences === 1 ? "zamena" : "zamena"}).`,
+      output: `Edited ${filePath} (${occurrences} ${occurrences === 1 ? "replacement" : "replacements"}).`,
       isError: false,
     };
   },

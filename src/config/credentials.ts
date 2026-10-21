@@ -36,7 +36,7 @@ function run(cmd: string, args: string[], stdin?: string): Promise<{ stdout: str
     child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
     child.on("error", (err) => {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-        reject(new Error(`Komanda "${cmd}" nije pronađena. ${MISSING_TOOL_HINT[cmd] ?? ""}`));
+        reject(new Error(`Command "${cmd}" not found. ${MISSING_TOOL_HINT[cmd] ?? ""}`));
       } else {
         reject(err);
       }
@@ -51,7 +51,7 @@ function run(cmd: string, args: string[], stdin?: string): Promise<{ stdout: str
 }
 
 const MISSING_TOOL_HINT: Record<string, string> = {
-  "secret-tool": "Instaliraj libsecret-tools (Debian/Ubuntu: sudo apt install libsecret-tools) i pokreni gnome-keyring ili drugi Secret Service provider.",
+  "secret-tool": "Install libsecret-tools (Debian/Ubuntu: sudo apt install libsecret-tools) and start gnome-keyring or another Secret Service provider.",
 };
 
 function runPs(script: string, stdin?: string): Promise<string> {
@@ -169,7 +169,7 @@ export async function getStoredApiKey(): Promise<string | null> {
     case "linux":
       return getStoredApiKeyLinux();
     default:
-      throw new Error(`Čuvanje API ključa nije podržano na platformi "${process.platform}".`);
+      throw new Error(`Storing the API key is not supported on platform "${process.platform}".`);
   }
 }
 
@@ -182,7 +182,7 @@ export async function setStoredApiKey(key: string): Promise<void> {
     case "linux":
       return setStoredApiKeyLinux(key);
     default:
-      throw new Error(`Čuvanje API ključa nije podržano na platformi "${process.platform}".`);
+      throw new Error(`Storing the API key is not supported on platform "${process.platform}".`);
   }
 }
 
@@ -195,6 +195,6 @@ export async function deleteStoredApiKey(): Promise<void> {
     case "linux":
       return deleteStoredApiKeyLinux();
     default:
-      throw new Error(`Čuvanje API ključa nije podržano na platformi "${process.platform}".`);
+      throw new Error(`Storing the API key is not supported on platform "${process.platform}".`);
   }
 }

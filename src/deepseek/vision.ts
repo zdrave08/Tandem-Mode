@@ -15,7 +15,7 @@ const MIME_BY_EXT: Record<string, string> = {
 };
 
 const DEFAULT_QUESTION =
-  "Opiši detaljno šta se vidi na slici — ako je screenshot buga, fokusiraj se na vidljivu grešku, tekst poruke, i UI kontekst.";
+  "Describe in detail what is visible in the image — if it is a bug screenshot, focus on the visible error, the message text, and the UI context.";
 
 export interface VisionResult {
   text: string;
@@ -31,12 +31,12 @@ export async function describeImage(
   const ext = path.extname(imagePath).toLowerCase();
   const mime = MIME_BY_EXT[ext];
   if (!mime) {
-    throw new Error(`Nepodržan format slike '${ext}'. Podržano: JPEG, PNG, GIF, WebP.`);
+    throw new Error(`Unsupported image format '${ext}'. Supported: JPEG, PNG, GIF, WebP.`);
   }
 
   const stats = await stat(imagePath);
   if (stats.size > MAX_IMAGE_BYTES) {
-    throw new Error(`Slika je prevelika (${(stats.size / 1024 / 1024).toFixed(1)} MiB, limit 32 MiB).`);
+    throw new Error(`Image is too large (${(stats.size / 1024 / 1024).toFixed(1)} MiB, limit 32 MiB).`);
   }
 
   const buffer = await readFile(imagePath);
@@ -76,7 +76,7 @@ export async function describeImage(
     | undefined;
   const content = message?.["content"];
   if (typeof content !== "string" || !content) {
-    throw new Error("Vision odgovor nije sadržao tekst.");
+    throw new Error("Vision response contained no text.");
   }
 
   return { text: content, usage: parseUsage((data["usage"] as Record<string, unknown>) ?? {}) };

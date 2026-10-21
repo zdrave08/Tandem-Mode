@@ -8,13 +8,13 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const readFileTool: ToolDefinition = {
   name: "read_file",
   description:
-    "Pročitaj sadržaj fajla sa brojevima linija (cat -n stil). Putanja može biti relativna na radni direktorijum.",
+    "Read a file's contents with line numbers (cat -n style). The path may be relative to the working directory.",
   parameters: {
     type: "object",
     properties: {
-      path: { type: "string", description: "Putanja do fajla." },
-      offset: { type: "integer", description: "Linija od koje se počinje (1-indeksirano). Podrazumevano 1." },
-      limit: { type: "integer", description: `Maksimalan broj linija za čitanje. Podrazumevano ${MAX_LINES}.` },
+      path: { type: "string", description: "Path to the file." },
+      offset: { type: "integer", description: "Line to start from (1-indexed). Defaults to 1." },
+      limit: { type: "integer", description: `Maximum number of lines to read. Defaults to ${MAX_LINES}.` },
     },
     required: ["path"],
   },
@@ -29,7 +29,7 @@ export const readFileTool: ToolDefinition = {
       const stats = await stat(resolved);
       if (stats.size > MAX_FILE_BYTES) {
         return {
-          output: `Fajl je prevelik za čitanje (${stats.size} bajtova, limit ${MAX_FILE_BYTES}). Verovatno nije tekstualni izvorni fajl (npr. state/binarni/vendored fajl) — proveri putanju ili koristi shell alat sa limitiranim izlazom.`,
+          output: `File is too large to read (${stats.size} bytes, limit ${MAX_FILE_BYTES}). It is probably not a text source file (e.g. a state/binary/vendored file) — check the path or use the shell tool with limited output.`,
           isError: true,
         };
       }
@@ -41,11 +41,11 @@ export const readFileTool: ToolDefinition = {
         .join("\n");
       const truncated = offset - 1 + limit < lines.length;
       return {
-        output: numbered + (truncated ? `\n... (isečeno, ukupno ${lines.length} linija)` : ""),
+        output: numbered + (truncated ? `\n... (truncated, ${lines.length} lines total)` : ""),
         isError: false,
       };
     } catch (err) {
-      return { output: `Greška pri čitanju ${resolved}: ${(err as Error).message}`, isError: true };
+      return { output: `Error reading ${resolved}: ${(err as Error).message}`, isError: true };
     }
   },
 };

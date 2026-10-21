@@ -46,6 +46,6 @@ export async function buildRepoMap(cwd: string): Promise<string> {
   const truncated = files.length > MAX_FILES;
   const listed = files.slice(0, MAX_FILES).sort();
   return (
-    listed.join("\n") + (truncated ? `\n... (isečeno, ukupno ${files.length} fajlova)` : "")
+    listed.join("\n") + (truncated ? `\n... (truncated, ${files.length} files in total)` : "")
   );
 }

@@ -173,9 +173,16 @@ Slojevito: **sesija** (komande u REPL-u) > **projekat**
   "defaultModel": "deepseek-v4-pro",
   "defaultReasoningEffort": "high",
   "budgetUsd": 5,
-  "maxReviewLoops": 3
+  "maxReviewLoops": 3,
+  "verifyCommand": "pnpm typecheck && pnpm test",
+  "language": "sr"
 }
 ```
+
+`verifyCommand` se pokreće pre svakog `/plan` review kruga, a njegov rezultat
+ide reviewer-u. `language` je jezik interfejsa (`en` ili `sr`, podrazumevano
+`en`); `--lang` flag i `TANDEM_LANG` env promenljiva ga nadjačavaju, tim
+redom. First-run wizard ga pita.
 
 API ključ se nikad ne čuva u ovim fajlovima — živi u OS-ovom skladištu
 kredencijala (ili u `DEEPSEEK_API_KEY` env promenljivoj, koja ima

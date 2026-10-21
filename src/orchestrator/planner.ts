@@ -3,14 +3,14 @@ import type { TandemEnv } from "../config/env.js";
 import type { UsageInfo } from "../deepseek/types.js";
 import { isPlan, type Plan } from "./types.js";
 
-const PLANNER_SYSTEM_PROMPT = `Ti si planner u Tandem Mode coding agentu. Dobijaš zadatak i mapu
-repozitorijuma. Podeli zadatak na male, nezavisne korake koje worker model
-(bez pristupa ovom razgovoru, samo alatima read_file/list_dir/search/edit/
-git_diff/shell/view_image) može samostalno izvršiti.
+const PLANNER_SYSTEM_PROMPT = `You are the planner in the Tandem Mode coding agent. You receive a task and a map
+of the repository. Split the task into small, independent steps that a worker model
+(with no access to this conversation, only the tools read_file/list_dir/search/edit/
+git_diff/shell/view_image) can carry out on its own.
 
-Odgovori ISKLJUČIVO validnim JSON-om, bez markdown ograda, tačno ove šeme:
+Respond ONLY with valid JSON, with no markdown fences, in exactly this schema:
 {
-  "summary": "kratak opis pristupa",
+  "summary": "short description of the approach",
   "tasks": [
     { "id": "t1", "description": "...", "files": ["..."], "acceptanceCriteria": "..." }
   ]
@@ -33,7 +33,7 @@ export async function runPlanner(
       jsonOutput: true,
       messages: [
         { role: "system", content: PLANNER_SYSTEM_PROMPT },
-        { role: "user", content: `Zadatak:\n${task}\n\nMapa repozitorijuma:\n${repoMap}` },
+        { role: "user", content: `Task:\n${task}\n\nRepository map:\n${repoMap}` },
       ],
       ...(signal ? { signal } : {}),
     });
@@ -42,11 +42,11 @@ export async function runPlanner(
     try {
       parsed = JSON.parse(result.content);
     } catch {
-      lastError = new Error(`Planner nije vratio validan JSON (pokušaj ${attempt}):\n${result.content.slice(0, 500)}`);
+      lastError = new Error(`Planner did not return valid JSON (attempt ${attempt}):\n${result.content.slice(0, 500)}`);
       continue;
     }
     if (!isPlan(parsed)) {
-      lastError = new Error(`Planner JSON ne prati očekivanu šemu (pokušaj ${attempt}):\n${result.content.slice(0, 500)}`);
+      lastError = new Error(`Planner JSON does not follow the expected schema (attempt ${attempt}):\n${result.content.slice(0, 500)}`);
       continue;
     }
 
@@ -56,5 +56,5 @@ export async function runPlanner(
   // Poznato ponašanje: json_object mod povremeno vrati prazan/nevalidan
   // sadržaj (verovatno prolazna API nestabilnost, ne dosledna greška —
   // videti docs/api-notes.md). Jedan retry pokriva to bez rušenja pozivaoca.
-  throw lastError ?? new Error("Planner nije uspeo posle više pokušaja.");
+  throw lastError ?? new Error("Planner failed after multiple attempts.");
 }

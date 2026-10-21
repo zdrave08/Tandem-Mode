@@ -7,12 +7,12 @@ const MAX_OUTPUT_CHARS = 30_000;
 
 export const gitDiffTool: ToolDefinition = {
   name: "git_diff",
-  description: "Prikaži git diff za radni direktorijum (neustavljene izmene), opciono za jednu putanju.",
+  description: "Show the git diff for the working directory (unstaged changes), optionally for a single path.",
   parameters: {
     type: "object",
     properties: {
-      path: { type: "string", description: "Ograniči diff na ovu putanju." },
-      staged: { type: "boolean", description: "Prikaži staged izmene (--cached) umesto working tree." },
+      path: { type: "string", description: "Limit the diff to this path." },
+      staged: { type: "boolean", description: "Show staged changes (--cached) instead of the working tree." },
     },
     required: [],
   },
@@ -35,10 +35,10 @@ export const gitDiffTool: ToolDefinition = {
 
     try {
       const { stdout } = await execFileAsync("git", gitArgs, { cwd: ctx.cwd, maxBuffer: 10 * 1024 * 1024 });
-      const output = stdout.length > MAX_OUTPUT_CHARS ? stdout.slice(0, MAX_OUTPUT_CHARS) + "\n... (isečeno)" : stdout;
-      return { output: output.trim() || "(nema izmena)", isError: false };
+      const output = stdout.length > MAX_OUTPUT_CHARS ? stdout.slice(0, MAX_OUTPUT_CHARS) + "\n... (truncated)" : stdout;
+      return { output: output.trim() || "(no changes)", isError: false };
     } catch (err) {
-      return { output: `Greška pri git diff: ${(err as Error).message}`, isError: true };
+      return { output: `git diff error: ${(err as Error).message}`, isError: true };
     }
   },
 };

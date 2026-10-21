@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { mkdir, readFile } from "node:fs/promises";
 import { resolveApiKey, resolveBaseUrl } from "./config/env.js";
 import { loadConfig } from "./config/store.js";
+import { resolveLanguage, setLanguage, t, type Language } from "./i18n/index.js";
 import { DEFAULT_CONFIG } from "./config/schema.js";
 import { runFirstRunWizard } from "./repl/wizard.js";
 import { handleCommand } from "./repl/commands.js";
@@ -73,7 +74,7 @@ function TurnView({
     async function run(): Promise<void> {
       const approve = async (toolName: string, args: Record<string, unknown>): Promise<boolean> => {
         if (state.autoApprove) {
-          console.error(`[--yes] auto-odobreno: ${toolName}(${JSON.stringify(args)})`);
+          console.error(t("autoApproved", { call: `${toolName}(${JSON.stringify(args)})` }));
           return true;
         }
         if (state.alwaysApprovedTools.has(toolName)) return true;
@@ -133,15 +134,15 @@ function TurnView({
             setContent(event.content);
             break;
           case "max_iterations_reached":
-            setNotice("Dostignut je maksimalan broj iteracija bez finalnog odgovora.");
+            setNotice(t("maxIterations"));
             break;
           case "budget_exceeded":
             setNotice(
-              `Budžet od $${event.budgetUsd.toFixed(2)} je dostignut (potrošeno ~$${event.spentUsd.toFixed(4)}). Petlja je zaustavljena pre sledećeg poziva — sesija je sačuvana, poveci budžet sa /budget i nastavi.`
+              t("budgetExceeded", { budget: `$${event.budgetUsd.toFixed(2)}`, spent: `$${event.spentUsd.toFixed(4)}` })
             );
             break;
           case "interrupted":
-            setNotice("⏹ Prekinuto (ESC). Sesija je sačuvana do ove tačke.");
+            setNotice(t("interrupted"));
             break;
         }
       }
@@ -167,21 +168,21 @@ function TurnView({
         </Box>
       )}
 
-      {toolLog.map((t) => {
-        const lines = t.output?.split("\n") ?? [];
+      {toolLog.map((entry) => {
+        const lines = entry.output?.split("\n") ?? [];
         const preview = lines.slice(0, 3).join("\n");
         const more = lines.length > 3;
         return (
-          <Box key={t.id} flexDirection="column">
-            <Text color={t.status === "denied" ? "yellow" : t.isError ? "red" : "cyan"}>
-              ⏺ {t.name}({JSON.stringify(t.args)})
-              {t.status === "running" ? "…" : t.status === "denied" ? " (odbijeno)" : ""}
+          <Box key={entry.id} flexDirection="column">
+            <Text color={entry.status === "denied" ? "yellow" : entry.isError ? "red" : "cyan"}>
+              ⏺ {entry.name}({JSON.stringify(entry.args)})
+              {entry.status === "running" ? "…" : entry.status === "denied" ? t("toolDenied") : ""}
             </Text>
             {preview && (
               <Text dimColor>
                 {"  ⎿  "}
                 {preview.slice(0, 400)}
-                {more || preview.length > 400 ? ` … (${lines.length} linija)` : ""}
+                {more || preview.length > 400 ? t("toolMoreLines", { count: lines.length }) : ""}
               </Text>
             )}
           </Box>
@@ -191,9 +192,9 @@ function TurnView({
       {pending && (
         <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
           <Text color="yellow" bold>
-            Destruktivna akcija: {pending.toolName}({JSON.stringify(pending.args)})
+            {t("destructiveAction", { call: `${pending.toolName}(${JSON.stringify(pending.args)})` })}
           </Text>
-          <Text dimColor>y = dozvoli, n = odbij, a = uvek dozvoli ovaj alat ovoj sesiji (odgovor ispod)</Text>
+          <Text dimColor>{t("approvalHint")}</Text>
         </Box>
       )}
 
@@ -201,7 +202,7 @@ function TurnView({
 
       {usageLine && <Text color="gray">{usageLine}</Text>}
       {notice && <Text color="yellow">{notice}</Text>}
-      {error && <Text color="red">Greška: {error}</Text>}
+      {error && <Text color="red">{t("errorPrefix", { message: error })}</Text>}
     </Box>
   );
 }
@@ -278,9 +279,9 @@ async function runPlanTask(
     });
   } catch (err) {
     if (isAbortError(err)) {
-      console.log("⏹ Orkestracija prekinuta (ESC).");
+      console.log(t("orchestrationInterrupted"));
     } else {
-      console.error(`Greška u orkestraciji: ${err instanceof Error ? err.message : String(err)}`);
+      console.error(t("orchestrationError", { message: err instanceof Error ? err.message : String(err) }));
     }
   }
 }
@@ -307,7 +308,7 @@ function createLineApprover(): { approve: Approver; close: () => void } {
   void consumeLines();
 
   const approve: Approver = (toolName, args) => {
-    console.log(`\nDozvoli izvršavanje ${toolName}(${JSON.stringify(args)})? (y/n/a — a = uvek dozvoli ovaj alat)`);
+    console.log(`\n${t("approvalPrompt", { call: `${toolName}(${JSON.stringify(args)})` })}`);
     return new Promise<ApprovalResponse>((resolve) => {
       resolveRef.current = resolve;
     });
@@ -325,9 +326,9 @@ function createLineApprover(): { approve: Approver; close: () => void } {
  */
 async function runRepl(state: RuntimeState): Promise<void> {
   await showBanner(state);
-  console.log("/help za komande, /exit za izlaz.\n");
+  console.log(t("replHint"));
   if (isPeakHour(new Date())) {
-    console.log("⚠ Trenutno je peak sat (01–04h ili 06–10h UTC) — cene su duplo veće nego off-peak.\n");
+    console.log(t("peakWarning"));
   }
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: "> " });
@@ -344,7 +345,7 @@ async function runRepl(state: RuntimeState): Promise<void> {
   let lastTurn: Promise<void> = Promise.resolve();
 
   const askApproval: Approver = (toolName, args) => {
-    console.log(`\nDozvoli izvršavanje ${toolName}(${JSON.stringify(args)})? (y/n/a — a = uvek dozvoli ovaj alat)`);
+    console.log(`\n${t("approvalPrompt", { call: `${toolName}(${JSON.stringify(args)})` })}`);
     return new Promise<ApprovalResponse>((resolve) => {
       approvalRef.current = resolve;
     });
@@ -377,7 +378,7 @@ async function runRepl(state: RuntimeState): Promise<void> {
     }
 
     if (turnActive) {
-      console.log("Sačekaj da se trenutni potez završi.");
+      console.log(t("waitForTurn"));
       continue;
     }
 
@@ -395,7 +396,7 @@ async function runRepl(state: RuntimeState): Promise<void> {
     if (line.startsWith("/plan ")) {
       const task = line.slice("/plan ".length).trim();
       if (!task) {
-        console.log("Upotreba: /plan <opis zadatka>");
+        console.log(t("usageLine", { syntax: "/plan <task>" }));
         showPrompt();
         continue;
       }
@@ -411,15 +412,15 @@ async function runRepl(state: RuntimeState): Promise<void> {
         const destPath = path.join(destDir, `paste-${Date.now()}.png`);
         const ok = await saveClipboardImage(destPath);
         if (!ok) {
-          console.log("Nema slike u clipboard-u.");
+          console.log(t("pasteNoImage"));
           showPrompt();
           continue;
         }
         const relPath = path.relative(state.cwd, destPath);
-        const text = `[slika zalepljena iz clipboard-a: ${relPath}] ${extra || "Pogledaj sliku i opiši šta vidiš."}`;
+        const text = `[image pasted from the clipboard: ${relPath}] ${extra || "Look at the image and describe what you see."}`;
         beginTurn((signal) => runTurn(state, text, askApproval, signal));
       } catch (err) {
-        console.log(`Greška: ${err instanceof Error ? err.message : String(err)}`);
+        console.log(t("errorPrefix", { message: err instanceof Error ? err.message : String(err) }));
         showPrompt();
       }
       continue;
@@ -448,6 +449,7 @@ interface ParsedArgv {
   effort?: "low" | "high" | "max";
   budgetUsd?: number;
   maxReviewLoops?: number;
+  language?: Language;
 }
 
 function parseArgv(argv: string[]): ParsedArgv {
@@ -459,6 +461,7 @@ function parseArgv(argv: string[]): ParsedArgv {
   let effort: ParsedArgv["effort"];
   let budgetUsd: number | undefined;
   let maxReviewLoops: number | undefined;
+  let language: Language | undefined;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -480,6 +483,9 @@ function parseArgv(argv: string[]): ParsedArgv {
     } else if (arg === "--max-review-loops") {
       const value = Number(argv[++i]);
       if (Number.isFinite(value) && value > 0) maxReviewLoops = value;
+    } else if (arg === "--lang") {
+      const value = argv[++i];
+      if (value === "en" || value === "sr") language = value;
     } else if (arg !== undefined) {
       rest.push(arg);
     }
@@ -490,6 +496,7 @@ function parseArgv(argv: string[]): ParsedArgv {
   if (effort !== undefined) parsed.effort = effort;
   if (budgetUsd !== undefined) parsed.budgetUsd = budgetUsd;
   if (maxReviewLoops !== undefined) parsed.maxReviewLoops = maxReviewLoops;
+  if (language !== undefined) parsed.language = language;
   return parsed;
 }
 
@@ -510,21 +517,21 @@ async function main(): Promise<void> {
   const parsed = parseArgv(rawArgv);
 
   const config = await loadConfig(cwd);
+  setLanguage(resolveLanguage(parsed.language, process.env["TANDEM_LANG"], config.language));
   let apiKey = await resolveApiKey();
 
   if (!apiKey) {
     if (!process.stdin.isTTY) {
-      console.error(
-        "Nema DeepSeek API ključa. Postavi DEEPSEEK_API_KEY env promenljivu ili pokreni tandem interaktivno da odradiš first-run wizard."
-      );
+      console.error(t("noApiKey"));
       process.exitCode = 1;
       return;
     }
     const wizardConfig = await runFirstRunWizard();
     Object.assign(config, wizardConfig);
+    setLanguage(resolveLanguage(parsed.language, process.env["TANDEM_LANG"], config.language));
     apiKey = await resolveApiKey();
     if (!apiKey) {
-      console.error("Ključ nije sačuvan ispravno — pokušaj ponovo.");
+      console.error(t("keyNotSaved"));
       process.exitCode = 1;
       return;
     }
@@ -537,7 +544,7 @@ async function main(): Promise<void> {
   if (parsed.resume) {
     const existing = await findLatestSession(cwd);
     if (!existing) {
-      console.error("Nema prethodne sesije za nastavak u ovom direktorijumu.");
+      console.error(t("noSessionToResume"));
       process.exitCode = 1;
       return;
     }

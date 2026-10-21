@@ -36,7 +36,7 @@ export function runShell(
       if (settled) return;
       settled = true;
       child.kill();
-      reject(new Error(`Komanda je prekinuta posle ${TIMEOUT_MS / 1000}s (timeout).`));
+      reject(new Error(`Command aborted after ${TIMEOUT_MS / 1000}s (timeout).`));
     }, TIMEOUT_MS);
 
     const onAbort = (): void => {
@@ -44,7 +44,7 @@ export function runShell(
       settled = true;
       clearTimeout(timer);
       child.kill();
-      const abortError = new Error("Komanda prekinuta (ESC).");
+      const abortError = new Error("Command aborted (ESC).");
       abortError.name = "AbortError";
       reject(abortError);
     };
@@ -60,7 +60,7 @@ export function runShell(
         child.kill();
         reject(
           new Error(
-            `Komanda je prekinuta jer je izlaz premašio ${HARD_MAX_BUFFER_CHARS} karaktera (verovatno čita binarne/velike fajlove umesto teksta).`
+            `Command aborted because its output exceeded ${HARD_MAX_BUFFER_CHARS} characters (probably reading binary/large files instead of text).`
           )
         );
       }
@@ -87,11 +87,11 @@ export function runShell(
 export const shellTool: ToolDefinition = {
   name: "shell",
   description:
-    "Izvrši komandu u sistemskoj školjki (PowerShell na Windows-u, sh na Linux/macOS) u radnom direktorijumu.",
+    "Run a command in the system shell (PowerShell on Windows, sh on Linux/macOS) in the working directory.",
   parameters: {
     type: "object",
     properties: {
-      command: { type: "string", description: "Komanda za izvršavanje." },
+      command: { type: "string", description: "Command to run." },
     },
     required: ["command"],
   },
@@ -103,13 +103,13 @@ export const shellTool: ToolDefinition = {
     const command = String(args["command"] ?? "");
     try {
       const { output, exitCode } = await runShell(command, ctx.cwd, ctx.signal);
-      const truncated = output.length > MAX_OUTPUT_CHARS ? output.slice(0, MAX_OUTPUT_CHARS) + "\n... (isečeno)" : output;
+      const truncated = output.length > MAX_OUTPUT_CHARS ? output.slice(0, MAX_OUTPUT_CHARS) + "\n... (truncated)" : output;
       return {
-        output: `[exit code ${exitCode}]\n${truncated || "(nema izlaza)"}`,
+        output: `[exit code ${exitCode}]\n${truncated || "(no output)"}`,
         isError: exitCode !== 0,
       };
     } catch (err) {
-      return { output: `Greška pri izvršavanju komande: ${(err as Error).message}`, isError: true };
+      return { output: `Error running command: ${(err as Error).message}`, isError: true };
     }
   },
 };

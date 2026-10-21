@@ -48,7 +48,7 @@ export async function runWebSearch(env: TandemEnv, query: string, signal?: Abort
   const text = content?.find((c) => typeof c["text"] === "string")?.["text"] as string | undefined;
 
   if (!text) {
-    throw new Error("Web search odgovor nije sadržao tekst.");
+    throw new Error("Web search response contained no text.");
   }
 
   return { text, usage: parseResponsesUsage((data["usage"] as Record<string, unknown>) ?? {}) };

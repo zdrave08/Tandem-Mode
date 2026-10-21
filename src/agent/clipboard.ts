@@ -1,4 +1,5 @@
 import { execFile, spawn } from "node:child_process";
+import { t } from "../i18n/index.js";
 import { promisify } from "node:util";
 import { unlink } from "node:fs/promises";
 
@@ -95,10 +96,8 @@ async function saveClipboardImageLinux(destPath: string): Promise<boolean> {
 
   const result = await readBinaryStdout(cmd, args);
   if (result.kind === "not-found") {
-    const hint = isWayland
-      ? "Instaliraj wl-clipboard (npr. sudo apt install wl-clipboard)."
-      : "Instaliraj xclip (npr. sudo apt install xclip).";
-    throw new Error(`Komanda "${cmd}" nije pronađena. ${hint}`);
+    const hint = isWayland ? t("clipboardInstallWl") : t("clipboardInstallXclip");
+    throw new Error(t("clipboardCmdNotFound", { cmd, hint }));
   }
   if (result.kind === "empty") return false;
 
@@ -116,6 +115,6 @@ export async function saveClipboardImage(destPath: string): Promise<boolean> {
     case "linux":
       return saveClipboardImageLinux(destPath);
     default:
-      throw new Error(`Clipboard paste slike nije podržan na platformi "${process.platform}".`);
+      throw new Error(t("clipboardUnsupported", { platform: process.platform }));
   }
 }

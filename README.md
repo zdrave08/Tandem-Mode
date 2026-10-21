@@ -171,9 +171,15 @@ in the current directory) > **global** (`~/.tandem/config.json`).
   "defaultReasoningEffort": "high",
   "budgetUsd": 5,
   "maxReviewLoops": 3,
-  "verifyCommand": "pnpm typecheck && pnpm test"
+  "verifyCommand": "pnpm typecheck && pnpm test",
+  "language": "en"
 }
 ```
+
+`verifyCommand` runs before each `/plan` review round and its result goes to
+the reviewer. `language` is the UI language (`en` or `sr`, default `en`); the
+`--lang` flag and the `TANDEM_LANG` environment variable override it, in that
+order. The first-run wizard asks for it.
 
 The API key is never stored in these files — it lives in the OS credential
 store (or `DEEPSEEK_API_KEY` env var, which takes priority, for CI use).

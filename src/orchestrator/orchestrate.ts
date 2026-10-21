@@ -6,13 +6,14 @@ import { buildRepoMap } from "./repoMap.js";
 import { runPlanner } from "./planner.js";
 import { runReviewer, type VerifyResult } from "./reviewer.js";
 import { runShell } from "../agent/tools/shell.js";
+import { t } from "../i18n/index.js";
 import type { Plan } from "./types.js";
 
-const WORKER_SYSTEM_PROMPT = `Ti si worker u Tandem Mode orkestraciji. Dobijaš JEDAN konkretan task iz
-plana ispod, sa mapom repozitorijuma. Nemaš pristup razgovoru koji je
-proizveo plan — sve što ti treba je ovde. Izvrši task koristeći alate
-(read_file, list_dir, search, edit, git_diff, shell, view_image). Kad
-završiš, odgovori sažeto bez tool poziva da se petlja zaustavi.`;
+const WORKER_SYSTEM_PROMPT = `You are a worker in a Tandem Mode orchestration. You get ONE concrete task from
+the plan below, with a repository map. You have no access to the conversation
+that produced the plan — everything you need is here. Carry out the task using the tools
+(read_file, list_dir, search, edit, git_diff, shell, view_image). When
+you are done, answer concisely without tool calls so the loop stops.`;
 
 export interface WorkerTurn {
   messages: ChatMessage[];
@@ -32,14 +33,14 @@ export interface OrchestrationOptions {
 }
 
 function buildStablePrefix(plan: Plan, repoMap: string): string {
-  return `${WORKER_SYSTEM_PROMPT}\n\nPlan (ceo, za kontekst):\n${JSON.stringify(plan)}\n\nMapa repozitorijuma:\n${repoMap}`;
+  return `${WORKER_SYSTEM_PROMPT}\n\nPlan (full, for context):\n${JSON.stringify(plan)}\n\nRepository map:\n${repoMap}`;
 }
 
 async function runVerify(command: string, cwd: string, signal?: AbortSignal): Promise<VerifyResult> {
-  console.log(`\n🧪 Verify: ${command}\n`);
+  console.log(t("orchVerify", { command }));
   try {
     const { output, exitCode } = await runShell(command, cwd, signal);
-    console.log(exitCode === 0 ? "  prošlo" : `  palo (exit ${exitCode})`);
+    console.log(exitCode === 0 ? t("orchVerifyPassed") : t("orchVerifyFailed", { code: String(exitCode) }));
     return { command, exitCode, output };
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") throw err;
@@ -48,23 +49,23 @@ async function runVerify(command: string, cwd: string, signal?: AbortSignal): Pr
 }
 
 export async function runOrchestration(task: string, opts: OrchestrationOptions): Promise<void> {
-  console.log("\n📋 Planiram...\n");
+  console.log(t("orchPlanning"));
   const repoMap = await buildRepoMap(opts.cwd);
   const { plan, usage: plannerUsage } = await runPlanner(opts.env, task, repoMap, opts.signal);
   opts.usage.add("deepseek-v4-pro", plannerUsage);
 
-  console.log(`Plan: ${plan.summary}`);
-  plan.tasks.forEach((t, i) => console.log(`  ${i + 1}. [${t.id}] ${t.description}`));
+  console.log(t("orchPlan", { summary: plan.summary }));
+  plan.tasks.forEach((planTask, i) => console.log(`  ${i + 1}. [${planTask.id}] ${planTask.description}`));
 
   const stablePrefix = buildStablePrefix(plan, repoMap);
   const workerThinking: ThinkingConfig = { reasoningEffort: "high" };
 
-  for (const t of plan.tasks) {
+  for (const planTask of plan.tasks) {
     if (opts.signal?.aborted) return;
-    console.log(`\n🔧 Worker: ${t.description}\n`);
+    console.log(t("orchWorker", { description: planTask.description }));
     const messages: ChatMessage[] = [
       { role: "system", content: stablePrefix },
-      { role: "user", content: `Task: ${t.description}\nKriterijum prihvatanja: ${t.acceptanceCriteria}` },
+      { role: "user", content: `Task: ${planTask.description}\nAcceptance criteria: ${planTask.acceptanceCriteria}` },
     ];
     await opts.runWorkerTurn({ messages, model: "deepseek-v4-flash", thinking: workerThinking, ...(opts.signal ? { signal: opts.signal } : {}) });
   }
@@ -72,32 +73,32 @@ export async function runOrchestration(task: string, opts: OrchestrationOptions)
   let loops = 0;
   for (;;) {
     if (opts.signal?.aborted) return;
-    console.log("\n🔍 Reviewer proverava...\n");
+    console.log(t("orchReviewer"));
     const diffResult = await gitDiffTool.execute({}, { cwd: opts.cwd, env: opts.env, usage: opts.usage });
     const verify = opts.verifyCommand ? await runVerify(opts.verifyCommand, opts.cwd, opts.signal) : undefined;
     const { result: review, usage: reviewUsage } = await runReviewer(opts.env, task, plan, diffResult.output, verify, opts.signal);
     opts.usage.add("deepseek-v4-pro", reviewUsage);
 
     if (review.approved) {
-      console.log(`✅ Reviewer odobrio. ${review.notes}\n`);
+      console.log(t("orchApproved", { notes: review.notes }));
       return;
     }
 
     loops++;
-    console.log(`⚠ Reviewer traži izmene (${loops}/${opts.maxReviewLoops}): ${review.notes}`);
+    console.log(t("orchChangesRequested", { loops, max: opts.maxReviewLoops, notes: review.notes }));
     review.corrections.forEach((c) => console.log(`  - ${c.description}`));
 
     if (loops >= opts.maxReviewLoops) {
-      console.log(`\n❌ Dostignut max_review_loops (${opts.maxReviewLoops}) bez odobrenja — proveri ručno.\n`);
+      console.log(t("orchMaxLoops", { max: opts.maxReviewLoops }));
       return;
     }
 
     for (const correction of review.corrections) {
       if (opts.signal?.aborted) return;
-      console.log(`\n🔧 Worker (korekcija): ${correction.description}\n`);
+      console.log(t("orchWorkerCorrection", { description: correction.description }));
       const messages: ChatMessage[] = [
         { role: "system", content: stablePrefix },
-        { role: "user", content: `Korekcija od reviewera: ${correction.description}` },
+        { role: "user", content: `Correction from the reviewer: ${correction.description}` },
       ];
       await opts.runWorkerTurn({ messages, model: "deepseek-v4-flash", thinking: workerThinking, ...(opts.signal ? { signal: opts.signal } : {}) });
     }

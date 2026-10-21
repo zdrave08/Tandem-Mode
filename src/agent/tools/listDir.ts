@@ -4,11 +4,11 @@ import type { ToolDefinition } from "./types.js";
 
 export const listDirTool: ToolDefinition = {
   name: "list_dir",
-  description: "Izlistaj sadržaj direktorijuma (ne rekurzivno).",
+  description: "List the contents of a directory (non-recursive).",
   parameters: {
     type: "object",
     properties: {
-      path: { type: "string", description: "Putanja do direktorijuma. Podrazumevano radni direktorijum." },
+      path: { type: "string", description: "Path to the directory. Defaults to the working directory." },
     },
     required: [],
   },
@@ -22,9 +22,9 @@ export const listDirTool: ToolDefinition = {
       const lines = entries
         .map((e) => `${e.isDirectory() ? "d" : "-"} ${e.name}`)
         .sort();
-      return { output: lines.join("\n") || "(prazno)", isError: false };
+      return { output: lines.join("\n") || "(empty)", isError: false };
     } catch (err) {
-      return { output: `Greška pri listanju ${resolved}: ${(err as Error).message}`, isError: true };
+      return { output: `Error listing ${resolved}: ${(err as Error).message}`, isError: true };
     }
   },
 };
