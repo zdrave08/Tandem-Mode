@@ -66,21 +66,3 @@ podešava) umesto da se Slack hardkoduje — Slack webhook je onda samo jedan
 primer u dokumentaciji šta tu staviti.
 
 **Fajlovi:** `src/config/schema.ts`, `src/orchestrator/orchestrate.ts`.
-
----
-
-### 6. Reviewer treba da vidi build/test rezultate, ne samo git diff
-
-**Problem:** Reviewer (`src/orchestrator/reviewer.ts`) trenutno dobija samo
-originalni zadatak, plan, i `git diff`. Ne može da zna da li se izmena
-stvarno builduje ili da li testovi prolaze — sudi o obliku koda, ne o
-ispravnosti.
-
-**Zadatak:** Neka orkestrator pokrene podesivu build/test komandu (npr. iz
-`package.json` skripti, ili polja u projektnom `.tandem/config.json`) posle
-što workeri završe, i prosledi izlaz revieweru uz diff. Ovo je stvarni M4
-obim (benchmark harness treba isti build/test runner) — vredi dizajnirati
-jednom i koristiti na oba mesta.
-
-**Fajlovi:** `src/orchestrator/orchestrate.ts`, `src/orchestrator/reviewer.ts`,
-`src/config/schema.ts`.

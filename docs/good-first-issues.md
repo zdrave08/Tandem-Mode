@@ -65,20 +65,3 @@ Slack specifically — a Slack webhook is then just one example in the docs of
 what to put there.
 
 **Files:** `src/config/schema.ts`, `src/orchestrator/orchestrate.ts`.
-
----
-
-### 6. Reviewer should see build/test results, not just the git diff
-
-**Problem:** The reviewer (`src/orchestrator/reviewer.ts`) currently only
-gets the original task, the plan, and `git diff`. It can't tell if the change
-actually builds or if tests pass — it's judging code shape, not correctness.
-
-**Ask:** Let the orchestrator run a configurable build/test command (e.g. from
-`package.json` scripts, or a project-level `.tandem/config.json` field) after
-the workers finish, and pass the output to the reviewer alongside the diff.
-This is real M4 scope (the benchmark harness needs the same build/test
-runner) — worth designing once and reusing in both places.
-
-**Files:** `src/orchestrator/orchestrate.ts`, `src/orchestrator/reviewer.ts`,
-`src/config/schema.ts`.

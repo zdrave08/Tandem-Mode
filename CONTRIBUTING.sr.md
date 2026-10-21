@@ -55,11 +55,9 @@ i `execute(args, ctx)`. Registruj ga u `src/agent/tools/index.ts`.
 ## Good first issues
 
 Traži `good first issue` labelu, ili pogledaj
-[`docs/good-first-issues.sr.md`](./docs/good-first-issues.sr.md) za sedam spremnih
-predloga — `/compact`, `/diff`, `/save-profile`/`/profile`, Linux/macOS
-podrška za `/paste` clipboard, notification hook na završetak taska,
-reviewer da vidi rezultate build/test-a (ne samo git diff), i Linux/macOS
-čuvanje API ključa su svi otvoreni. Sekcija 4
+[`docs/good-first-issues.sr.md`](./docs/good-first-issues.sr.md) za četiri spremna
+predloga — `/compact`, `/diff`, `/save-profile`/`/profile` i notification hook
+na završetak taska su svi otvoreni. Sekcija 4
 [plana razvoja](./deepseek-cli-development-plan.md) ima istu listu plus
 obrazloženje zašto je svaka stavka odložena.
 
