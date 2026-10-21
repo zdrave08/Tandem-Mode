@@ -78,6 +78,7 @@ export async function handleCommand(line: string, state: RuntimeState): Promise<
       console.log(`Thinking: ${state.thinkingEnabled ? `on (${state.reasoningEffort})` : "off"}`);
       console.log(`Budžet: ${state.budgetUsd !== undefined ? `$${state.budgetUsd.toFixed(2)}` : "nije postavljen"}`);
       console.log(`Max review loops: ${state.maxReviewLoops}`);
+      console.log(`Verify komanda: ${state.verifyCommand ?? "nije postavljena"}`);
       console.log(`Poruka u istoriji: ${state.messages.length}`);
       return "continue";
     }

@@ -271,6 +271,7 @@ async function runPlanTask(
       cwd: state.cwd,
       env: state.env,
       maxReviewLoops: state.maxReviewLoops,
+      ...(state.verifyCommand !== undefined ? { verifyCommand: state.verifyCommand } : {}),
       usage: state.usage,
       ...(signal !== undefined ? { signal } : {}),
       runWorkerTurn: (turn) => runTurnConfig(state, turn, askApproval),
@@ -562,6 +563,7 @@ async function main(): Promise<void> {
     messages,
     usage: new UsageAccumulator(),
   };
+  if (config.verifyCommand) state.verifyCommand = config.verifyCommand;
   const budgetUsd = parsed.budgetUsd ?? config.budgetUsd;
   if (budgetUsd !== undefined) state.budgetUsd = budgetUsd;
 

@@ -6,7 +6,9 @@ import { isReviewResult, type Plan, type ReviewResult } from "./types.js";
 const REVIEWER_SYSTEM_PROMPT = `Ti si reviewer u Tandem Mode coding agentu. Dobijaš originalni zadatak,
 plan koji je worker(i) izvršio, i git diff stvarnih izmena. Proveri da li
 diff zaista ispunjava zadatak i kriterijume prihvatanja iz plana, da nema
-nepotrebnih izmena, i da je kod razuman.
+nepotrebnih izmena, i da je kod razuman. Ako je priložen rezultat provere
+(build/test), exit code različit od 0 znači da izmena ne prolazi — tada ne
+odobravaj, a u "corrections" navedi konkretnu grešku iz izlaza.
 
 Odgovori ISKLJUČIVO validnim JSON-om, bez markdown ograda, tačno ove šeme:
 {
@@ -17,12 +19,26 @@ Odgovori ISKLJUČIVO validnim JSON-om, bez markdown ograda, tačno ove šeme:
 "corrections" je prazan niz ako je approved true.`;
 
 const MAX_ATTEMPTS = 2;
+const MAX_VERIFY_CHARS = 6000;
+
+export interface VerifyResult {
+  command: string;
+  exitCode: number | null;
+  output: string;
+}
+
+function formatVerify(verify: VerifyResult): string {
+  // Greške build/test alata su obično na kraju izlaza, pa čuvamo rep, ne glavu.
+  const out = verify.output.length > MAX_VERIFY_CHARS ? "...(isečeno)\n" + verify.output.slice(-MAX_VERIFY_CHARS) : verify.output;
+  return `\n\nRezultat provere (${verify.command}), exit code ${verify.exitCode ?? "n/a (nije pokrenuto)"}:\n${out || "(nema izlaza)"}`;
+}
 
 export async function runReviewer(
   env: TandemEnv,
   originalTask: string,
   plan: Plan,
   gitDiff: string,
+  verify?: VerifyResult,
   signal?: AbortSignal
 ): Promise<{ result: ReviewResult; usage: UsageInfo }> {
   let lastError: Error | undefined;
@@ -36,7 +52,7 @@ export async function runReviewer(
         { role: "system", content: REVIEWER_SYSTEM_PROMPT },
         {
           role: "user",
-          content: `Originalni zadatak:\n${originalTask}\n\nPlan:\n${JSON.stringify(plan, null, 2)}\n\nGit diff:\n${gitDiff.slice(0, 15000)}`,
+          content: `Originalni zadatak:\n${originalTask}\n\nPlan:\n${JSON.stringify(plan, null, 2)}\n\nGit diff:\n${gitDiff.slice(0, 15000)}${verify ? formatVerify(verify) : ""}`,
         },
       ],
       ...(signal ? { signal } : {}),

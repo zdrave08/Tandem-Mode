@@ -170,7 +170,8 @@ in the current directory) > **global** (`~/.tandem/config.json`).
   "defaultModel": "deepseek-v4-pro",
   "defaultReasoningEffort": "high",
   "budgetUsd": 5,
-  "maxReviewLoops": 3
+  "maxReviewLoops": 3,
+  "verifyCommand": "pnpm typecheck && pnpm test"
 }
 ```
 

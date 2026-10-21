@@ -4,6 +4,8 @@ export interface TandemConfig {
   budgetUsd?: number;
   baseUrl?: string;
   maxReviewLoops?: number;
+  /** Shell komanda (build/test) koju orkestracija pokreće pre svakog review-a; izlaz ide reviewer-u. */
+  verifyCommand?: string;
 }
 
 export const DEFAULT_CONFIG: Required<Pick<TandemConfig, "defaultModel" | "defaultReasoningEffort" | "maxReviewLoops">> = {

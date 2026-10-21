@@ -18,7 +18,7 @@ const SAFE_COMMAND_PATTERNS: RegExp[] = [
   /^(which|where)\s+\S/i,
 ];
 
-function runShell(
+export function runShell(
   command: string,
   cwd: string,
   signal?: AbortSignal
