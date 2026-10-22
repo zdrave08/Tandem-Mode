@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('BW_BPW_SLUG')) {
-    define('BW_BPW_SLUG', 'bitwise-bulk-price-wizard');
+    define('BW_BPW_SLUG', 'bulk-price-wizard');
 }
 
 if (!function_exists('__')) {

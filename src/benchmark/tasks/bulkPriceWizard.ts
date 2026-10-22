@@ -6,10 +6,10 @@ const FIXTURES_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
   "fixtures",
-  "bitwise-bulk-price-wizard"
+  "bulk-price-wizard"
 );
 
-export interface BwTask {
+export interface BenchmarkTask {
   id: string;
   description: string;
   expectedFiles: string[];
@@ -27,7 +27,7 @@ async function replaceInFile(filePath: string, from: string, to: string): Promis
   await writeFile(filePath, content.replace(from, to), "utf8");
 }
 
-export const bwTasks: BwTask[] = [
+export const benchmarkTasks: BenchmarkTask[] = [
   {
     id: "money-rounding",
     description:

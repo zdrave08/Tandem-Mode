@@ -118,7 +118,7 @@ Verifikovati protiv živog API-ja i dokumentovati u `docs/api-notes.md`:
       upozorenje pre izvršavanja (nikad tiho)
 
 **Izlazni kriterijum: ✅ ZATVOREN (2026-08-27).** Agent je samostalno odradio
-4 realna fixa na WP pluginu (bitwise-bulk-price-wizard), end-to-end, sa
+4 realna fixa na WP pluginu (bulk-price-wizard), end-to-end, sa
 `php -l` validacijom — kao deo M4 benchmark serije (12/12 pokretanja tačno,
 videti `docs/benchmark-results.md`). Rađeno protiv posvećene lokalne kopije
 repoa, ne protiv radne kopije korisnika.
@@ -188,7 +188,7 @@ agentovu sopstvenu upotrebu `git_diff` alata, ne samo na reviewer.
 - [x] `src/benchmark/types.ts` — konkretni tipovi za rezultate
 - [x] `src/benchmark/runner.ts` — headless runner (bez Ink UI), reset/inject/
       run/verify/report ciklus, otporan na pad pojedinačnog pokušaja
-- [x] **Benchmark izvršen (2026-08-27)** protiv bitwise-bulk-price-wizard
+- [x] **Benchmark izvršen (2026-08-27)** protiv bulk-price-wizard
       (posvećena lokalna kopija, ne radna kopija korisnika) — 4 ubačena bага
       × 3 konfiguracije = 12 pokretanja. **12/12 tačno, 12/12 build (`php -l`)
       prošao, 0 nepotrebnih izmena.** Detalji: `docs/benchmark-results.md`.
@@ -262,7 +262,7 @@ paralelni workeri, GUI, SaaS backend, IDE ekstenzije.
 
 ---
 
-## 6. Kalendar (part-time, uz ostale Bitwise obaveze)
+## 6. Kalendar (part-time, uz ostale obaveze)
 
 | Faza | Trajanje | Kumulativno |
 |---|---|---|

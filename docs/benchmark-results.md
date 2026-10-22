@@ -3,14 +3,14 @@
 **English** | [Srpski](./benchmark-results.sr.md)
 
 **Date:** 2026-08-27
-**Target:** `bitwise-bulk-price-wizard` — a real WooCommerce plugin (~1.6 MB,
+**Target:** `bulk-price-wizard` — a real WooCommerce plugin (~1.6 MB,
 no build tooling, no test suite) not yet public. Benchmarked against a
 dedicated local copy, never the maintainer's working repository.
 
 **Method:** four known bugs deliberately injected into a clean baseline
 commit (SWE-bench style — real codebase, precise/reproducible bug, objective
 verify script), each run against all three configurations. Verification is a
-standalone PHP script per task (see `src/benchmark/fixtures/bitwise-bulk-price-wizard/`)
+standalone PHP script per task (see `src/benchmark/fixtures/bulk-price-wizard/`)
 that requires the plugin's own classes directly, with minimal WP/WC stubs —
 no bug leakage: the agent never sees the verify script, only the task
 description.

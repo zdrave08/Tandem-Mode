@@ -61,7 +61,7 @@ interface BenchmarkTask {
 
 ## What's still open for a second run
 
-Run 1 used four small, single-file bugs against `bitwise-bulk-price-wizard`
+Run 1 used four small, single-file bugs against `bulk-price-wizard`
 (a real, private WooCommerce plugin — see `docs/benchmark-results.md`). To
 actually stress-test the orchestration hypothesis rather than just exercise
 the harness, a follow-up run should add:

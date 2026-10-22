@@ -7,7 +7,7 @@ import { createSession, appendSessionMessage, type Session } from "../agent/sess
 import { UsageAccumulator } from "../agent/usage.js";
 import type { TandemEnv } from "../config/env.js";
 import type { ChatMessage, ThinkingConfig } from "../deepseek/types.js";
-import type { BwTask } from "./tasks/bitwiseBulkPriceWizard.js";
+import type { BenchmarkTask } from "./tasks/bulkPriceWizard.js";
 import type { BenchmarkConfigName, BenchmarkResult } from "./types.js";
 
 const execFileAsync = promisify(execFile);
@@ -71,7 +71,7 @@ function detectSelfCorrection(history: { name: string; isError: boolean }[]): bo
 export async function runOneAttempt(
   env: TandemEnv,
   config: BenchmarkConfigName,
-  task: BwTask,
+  task: BenchmarkTask,
   repoPath: string,
   baselineRef: string
 ): Promise<BenchmarkResult> {
@@ -170,7 +170,7 @@ export async function runOneAttempt(
 
 export async function runBenchmark(
   env: TandemEnv,
-  tasks: BwTask[],
+  tasks: BenchmarkTask[],
   configs: BenchmarkConfigName[],
   repoPath: string,
   baselineRef: string,

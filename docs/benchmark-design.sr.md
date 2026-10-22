@@ -63,7 +63,7 @@ interface BenchmarkTask {
 ## Šta je još otvoreno za drugi run
 
 Run 1 je koristio četiri mala, jednodatotečna bага protiv
-`bitwise-bulk-price-wizard` (pravi, privatni WooCommerce plugin — vidi
+`bulk-price-wizard` (pravi, privatni WooCommerce plugin — vidi
 `docs/benchmark-results.sr.md`). Da bi se stvarno testirala hipoteza o
 orkestraciji umesto samo vežbao harness, naredni run treba da doda:
 

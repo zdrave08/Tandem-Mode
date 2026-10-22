@@ -3,7 +3,7 @@
 [English](./benchmark-results.md) | **Srpski**
 
 **Datum:** 2026-08-27
-**Target:** `bitwise-bulk-price-wizard` — pravi WooCommerce plugin (~1.6 MB,
+**Target:** `bulk-price-wizard` — pravi WooCommerce plugin (~1.6 MB,
 bez build tooling-a, bez test suite-a), još nije javan. Benchmarkovan protiv
 posvećene lokalne kopije, nikad protiv radnog repozitorijuma održavaoca.
 
@@ -11,7 +11,7 @@ posvećene lokalne kopije, nikad protiv radnog repozitorijuma održavaoca.
 (SWE-bench stil — pravi kod, precizan/reproduktivan bag, objektivna verify
 skripta), svaki pokrenut protiv sve tri konfiguracije. Verifikacija je
 samostalna PHP skripta po tasku (vidi
-`src/benchmark/fixtures/bitwise-bulk-price-wizard/`) koja direktno zahteva
+`src/benchmark/fixtures/bulk-price-wizard/`) koja direktno zahteva
 pluginove sopstvene klase, uz minimalne WP/WC stubove — nema curenja bага:
 agent nikad ne vidi verify skriptu, samo opis taska.
 
