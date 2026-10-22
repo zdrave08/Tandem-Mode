@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import type { ToolDefinition } from "./types.js";
 
 const MAX_OUTPUT_CHARS = 20_000;
@@ -18,32 +18,57 @@ const SAFE_COMMAND_PATTERNS: RegExp[] = [
   /^(which|where)\s+\S/i,
 ];
 
+export interface RunShellOptions {
+  /** Extra environment variables, merged over the current process environment. */
+  env?: Record<string, string>;
+  timeoutMs?: number;
+}
+
+/**
+ * `child.kill()` only stops the shell itself; a command it started (node, curl, ...)
+ * keeps running and keeps the pipes open, which holds the whole CLI process open
+ * after a timeout or abort. On Windows the whole process tree is killed, and on every
+ * platform the pipes are closed so nothing keeps the event loop alive.
+ */
+function terminate(child: ChildProcess): void {
+  if (child.pid !== undefined && process.platform === "win32") {
+    spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], { stdio: "ignore" }).on("error", () => {});
+  } else {
+    child.kill();
+  }
+  child.stdout?.destroy();
+  child.stderr?.destroy();
+}
+
 export function runShell(
   command: string,
   cwd: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  options: RunShellOptions = {}
 ): Promise<{ output: string; exitCode: number | null }> {
   const isWindows = process.platform === "win32";
   const exe = isWindows ? "powershell.exe" : "/bin/sh";
   const args = isWindows ? ["-NoProfile", "-NonInteractive", "-Command", command] : ["-c", command];
+  const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
 
   return new Promise((resolve, reject) => {
-    const child = spawn(exe, args, { cwd });
+    const child = spawn(exe, args, { cwd, ...(options.env ? { env: { ...process.env, ...options.env } } : {}) });
     let output = "";
     let settled = false;
 
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
-      child.kill();
-      reject(new Error(`Command aborted after ${TIMEOUT_MS / 1000}s (timeout).`));
-    }, TIMEOUT_MS);
+      signal?.removeEventListener("abort", onAbort);
+      terminate(child);
+      reject(new Error(`Command aborted after ${timeoutMs / 1000}s (timeout).`));
+    }, timeoutMs);
 
     const onAbort = (): void => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      child.kill();
+      terminate(child);
       const abortError = new Error("Command aborted (ESC).");
       abortError.name = "AbortError";
       reject(abortError);
@@ -57,7 +82,7 @@ export function runShell(
         settled = true;
         clearTimeout(timer);
         signal?.removeEventListener("abort", onAbort);
-        child.kill();
+        terminate(child);
         reject(
           new Error(
             `Command aborted because its output exceeded ${HARD_MAX_BUFFER_CHARS} characters (probably reading binary/large files instead of text).`

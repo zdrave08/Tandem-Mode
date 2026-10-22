@@ -6,6 +6,7 @@ import { buildRepoMap } from "./repoMap.js";
 import { runPlanner } from "./planner.js";
 import { runReviewer, type VerifyResult } from "./reviewer.js";
 import { runShell } from "../agent/tools/shell.js";
+import { notifyCompletion } from "./notify.js";
 import { t } from "../i18n/index.js";
 import type { Plan } from "./types.js";
 
@@ -27,6 +28,7 @@ export interface OrchestrationOptions {
   env: TandemEnv;
   maxReviewLoops: number;
   verifyCommand?: string;
+  notifyCommand?: string;
   usage: UsageAccumulator;
   signal?: AbortSignal;
   runWorkerTurn: (turn: WorkerTurn) => Promise<void>;
@@ -81,6 +83,13 @@ export async function runOrchestration(task: string, opts: OrchestrationOptions)
 
     if (review.approved) {
       console.log(t("orchApproved", { notes: review.notes }));
+      await notifyCompletion(opts.notifyCommand, opts.cwd, {
+        outcome: "approved",
+        task,
+        notes: review.notes,
+        reviewLoops: loops,
+        costUsd: opts.usage.estimatedCostUsd(),
+      });
       return;
     }
 
@@ -90,6 +99,13 @@ export async function runOrchestration(task: string, opts: OrchestrationOptions)
 
     if (loops >= opts.maxReviewLoops) {
       console.log(t("orchMaxLoops", { max: opts.maxReviewLoops }));
+      await notifyCompletion(opts.notifyCommand, opts.cwd, {
+        outcome: "max_review_loops",
+        task,
+        notes: review.notes,
+        reviewLoops: loops,
+        costUsd: opts.usage.estimatedCostUsd(),
+      });
       return;
     }
 

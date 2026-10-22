@@ -32,6 +32,7 @@ export const sr: Record<MessageKey, string> = {
   statusNotSet: "nije postavljen",
   statusVerify: "Verify komanda: {value}",
   statusVerifyNone: "nije postavljena",
+  statusNotify: "Notify komanda: {value}",
   statusMessages: "Poruka u istoriji: {count}",
 
   usageCalls: "Pozivi: {count}",
@@ -109,6 +110,7 @@ export const sr: Record<MessageKey, string> = {
   orchApproved: "✅ Reviewer odobrio. {notes}\n",
   orchChangesRequested: "⚠ Reviewer traži izmene ({loops}/{max}): {notes}",
   orchMaxLoops: "\n❌ Dostignut max_review_loops ({max}) bez odobrenja — proveri ručno.\n",
+  notifyFailed: "⚠ Komanda za obaveštenje nije uspela: {reason}",
 
   clipboardCmdNotFound: 'Komanda "{cmd}" nije pronađena. {hint}',
   clipboardInstallWl: "Instaliraj wl-clipboard (npr. sudo apt install wl-clipboard).",

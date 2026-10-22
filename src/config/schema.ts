@@ -6,6 +6,8 @@ export interface TandemConfig {
   maxReviewLoops?: number;
   /** Shell komanda (build/test) koju orkestracija pokreće pre svakog review-a; izlaz ide reviewer-u. */
   verifyCommand?: string;
+  /** Shell command run when a /plan run ends (approved, max review loops, or error); details come as TANDEM_* env vars. */
+  notifyCommand?: string;
   /** UI language; the --lang flag and TANDEM_LANG env override it. */
   language?: "en" | "sr";
 }

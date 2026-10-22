@@ -176,6 +176,7 @@ in the current directory) > **global** (`~/.tandem/config.json`).
   "budgetUsd": 5,
   "maxReviewLoops": 3,
   "verifyCommand": "pnpm typecheck && pnpm test",
+  "notifyCommand": "curl -s -d \"Tandem: $TANDEM_OUTCOME\" https://ntfy.sh/my-topic",
   "language": "en"
 }
 ```
@@ -184,6 +185,24 @@ in the current directory) > **global** (`~/.tandem/config.json`).
 the reviewer. `language` is the UI language (`en` or `sr`, default `en`); the
 `--lang` flag and the `TANDEM_LANG` environment variable override it, in that
 order. The first-run wizard asks for it.
+
+`notifyCommand` runs when a `/plan` run ends: reviewer approved, `max_review_loops`
+reached, or an error (not when you interrupt it with ESC). The details come in as
+environment variables, never spliced into the command text: `TANDEM_OUTCOME`
+(`approved`, `max_review_loops` or `error`), `TANDEM_TASK`, `TANDEM_NOTES` (the
+reviewer's notes, or the error message), `TANDEM_REVIEW_LOOPS` and `TANDEM_COST_USD`.
+The command runs in your shell (PowerShell on Windows, `sh` elsewhere) with a 15 s
+limit, and a failure only prints a warning. Any shell command works, so Slack,
+ntfy, a desktop notification or a webhook are all just examples:
+
+```json
+{ "notifyCommand": "curl -s -d \"Tandem: $TANDEM_OUTCOME\" https://ntfy.sh/my-topic" }
+```
+
+On Windows (PowerShell) the variables are written `$env:TANDEM_OUTCOME`.
+
+Like `verifyCommand`, `notifyCommand` runs without asking, so only put it in a
+project's `.tandem/config.json` if you trust that project.
 
 **Profiles:** `/save-profile <name>` stores the current model, reasoning effort,
 budget and review loops in `~/.tandem/profiles/<name>.json`, and `/profile <name>`

@@ -12,6 +12,7 @@ export interface RuntimeState {
   budgetUsd?: number;
   maxReviewLoops: number;
   verifyCommand?: string;
+  notifyCommand?: string;
   autoApprove: boolean;
   /** Alati koje je korisnik označio "uvek dozvoli" za trenutnu sesiju. */
   alwaysApprovedTools: Set<string>;

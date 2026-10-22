@@ -17,6 +17,7 @@ import { UsageAccumulator } from "./agent/usage.js";
 import { isPeakHour } from "./agent/pricing.js";
 import { saveClipboardImage } from "./agent/clipboard.js";
 import { runOrchestration } from "./orchestrator/orchestrate.js";
+import { notifyCompletion } from "./orchestrator/notify.js";
 import { appendSessionMessage, createSession, findLatestSession, loadSessionMessages } from "./agent/session.js";
 import type { RuntimeState } from "./repl/state.js";
 import type { ChatMessage, ThinkingConfig } from "./deepseek/types.js";
@@ -273,6 +274,7 @@ async function runPlanTask(
       env: state.env,
       maxReviewLoops: state.maxReviewLoops,
       ...(state.verifyCommand !== undefined ? { verifyCommand: state.verifyCommand } : {}),
+      ...(state.notifyCommand !== undefined ? { notifyCommand: state.notifyCommand } : {}),
       usage: state.usage,
       ...(signal !== undefined ? { signal } : {}),
       runWorkerTurn: (turn) => runTurnConfig(state, turn, askApproval),
@@ -281,7 +283,15 @@ async function runPlanTask(
     if (isAbortError(err)) {
       console.log(t("orchestrationInterrupted"));
     } else {
-      console.error(t("orchestrationError", { message: err instanceof Error ? err.message : String(err) }));
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(t("orchestrationError", { message }));
+      await notifyCompletion(state.notifyCommand, state.cwd, {
+        outcome: "error",
+        task,
+        notes: message,
+        reviewLoops: 0,
+        costUsd: state.usage.estimatedCostUsd(),
+      });
     }
   }
 }
@@ -571,6 +581,7 @@ async function main(): Promise<void> {
     usage: new UsageAccumulator(),
   };
   if (config.verifyCommand) state.verifyCommand = config.verifyCommand;
+  if (config.notifyCommand) state.notifyCommand = config.notifyCommand;
   const budgetUsd = parsed.budgetUsd ?? config.budgetUsd;
   if (budgetUsd !== undefined) state.budgetUsd = budgetUsd;
 

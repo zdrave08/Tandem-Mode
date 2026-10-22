@@ -55,9 +55,9 @@ i `execute(args, ctx)`. Registruj ga u `src/agent/tools/index.ts`.
 ## Good first issues
 
 Traži `good first issue` labelu, ili pogledaj
-[`docs/good-first-issues.sr.md`](./docs/good-first-issues.sr.md) za jedan spreman
-predlog — notification hook na završetak taska je još otvoren. Sekcija 4
-[plana razvoja](./deepseek-cli-development-plan.md) ima istu listu plus
+[`docs/good-first-issues.sr.md`](./docs/good-first-issues.sr.md) (svi predlozi
+tamo su implementirani; otvoreni su u issue tracker-u). Sekcija 4
+[plana razvoja](./deepseek-cli-development-plan.md) ima plan puta plus
 obrazloženje zašto je svaka stavka odložena.
 
 Pregledanje i preuzimanje issue-a je najlakše preko

@@ -179,6 +179,7 @@ Slojevito: **sesija** (komande u REPL-u) > **projekat**
   "budgetUsd": 5,
   "maxReviewLoops": 3,
   "verifyCommand": "pnpm typecheck && pnpm test",
+  "notifyCommand": "curl -s -d \"Tandem: $TANDEM_OUTCOME\" https://ntfy.sh/my-topic",
   "language": "sr"
 }
 ```
@@ -187,6 +188,24 @@ Slojevito: **sesija** (komande u REPL-u) > **projekat**
 ide reviewer-u. `language` je jezik interfejsa (`en` ili `sr`, podrazumevano
 `en`); `--lang` flag i `TANDEM_LANG` env promenljiva ga nadjačavaju, tim
 redom. First-run wizard ga pita.
+
+`notifyCommand` se pokreće kad se `/plan` završi: reviewer odobrio, dostignut
+`max_review_loops`, ili greška (ne i kad ga prekineš sa ESC). Detalji dolaze kao
+promenljive okruženja, nikad ubačeni u tekst komande: `TANDEM_OUTCOME`
+(`approved`, `max_review_loops` ili `error`), `TANDEM_TASK`, `TANDEM_NOTES`
+(beleške reviewer-a, ili poruka greške), `TANDEM_REVIEW_LOOPS` i `TANDEM_COST_USD`.
+Komanda radi u tvojoj školjki (PowerShell na Windows-u, `sh` drugde) sa limitom
+od 15 s, a neuspeh samo ispiše upozorenje. Može bilo koja shell komanda, pa su
+Slack, ntfy, desktop obaveštenje ili webhook samo primeri:
+
+```json
+{ "notifyCommand": "curl -s -d \"Tandem: $TANDEM_OUTCOME\" https://ntfy.sh/my-topic" }
+```
+
+Na Windows-u (PowerShell) promenljive se pišu `$env:TANDEM_OUTCOME`.
+
+Kao i `verifyCommand`, `notifyCommand` se pokreće bez pitanja, pa ga stavljaj u
+`.tandem/config.json` projekta samo ako tom projektu veruješ.
 
 **Profili:** `/save-profile <ime>` čuva trenutni model, reasoning effort, budžet i
 review krugove u `~/.tandem/profiles/<ime>.json`, a `/profile <ime>` ih vraća u

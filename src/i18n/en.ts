@@ -32,6 +32,7 @@ export const en = {
   statusNotSet: "not set",
   statusVerify: "Verify command: {value}",
   statusVerifyNone: "not set",
+  statusNotify: "Notify command: {value}",
   statusMessages: "Messages in history: {count}",
 
   usageCalls: "Calls: {count}",
@@ -109,6 +110,7 @@ export const en = {
   orchApproved: "✅ Reviewer approved. {notes}\n",
   orchChangesRequested: "⚠ Reviewer requests changes ({loops}/{max}): {notes}",
   orchMaxLoops: "\n❌ Reached max_review_loops ({max}) without approval — check manually.\n",
+  notifyFailed: "⚠ The notification command failed: {reason}",
 
   clipboardCmdNotFound: 'Command "{cmd}" not found. {hint}',
   clipboardInstallWl: "Install wl-clipboard (e.g. sudo apt install wl-clipboard).",
