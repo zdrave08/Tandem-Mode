@@ -11,6 +11,7 @@ export const sr: Record<MessageKey, string> = {
   /usage                                      utrošak tokena, procenjena cena, off-peak projekcija
   /budget [iznos]                             prikaži ili postavi budžet u USD
   /new                                        nova sesija
+  /compact                                    sažmi istoriju u novu sesiju da se oslobodi kontekst
   /fork                                       nova sesija sa kopijom trenutne istorije
   /resume [id]                                nastavi poslednju ili navedenu sesiju
   /paste [poruka]                             pošalji sliku iz clipboard-a
@@ -46,6 +47,12 @@ export const sr: Record<MessageKey, string> = {
   sessionNotFound: "Sesija '{id}' nije pronađena.",
   sessionNoneInDir: "Nema prethodne sesije u ovom direktorijumu.",
   sessionResumed: "Nastavljena sesija: {id} ({count} poruka)",
+
+  compactNothing: "Još nema šta da se sažme.",
+  compactWorking: "Sažimam {count} poruka...",
+  compactDone:
+    "Sažeto {before} poruka u {after}. Nova sesija: {id} (prethodna sesija {previous} ostaje netaknuta na disku)",
+  compactFailed: "Sažimanje nije uspelo, istorija je nepromenjena: {message}",
 
   toolDenied: " (odbijeno)",
   toolMoreLines: " … ({count} linija)",

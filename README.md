@@ -128,9 +128,11 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 | `/thinking [on\|off]` | Toggle thinking mode |
 | `/effort [low\|high\|max]` | Show or set reasoning effort |
 | `/status` | Current session/settings |
+| `/diff [--staged] [path]` | Working-tree diff, no API call |
 | `/usage` | Tokens, cost, off-peak projection |
 | `/budget [amount]` | Show or set the session budget |
 | `/new` | Start a fresh session |
+| `/compact` | Summarize the history into a new session to free up context; the old session stays on disk |
 | `/fork` | New session, carrying over the current history |
 | `/resume [id]` | Continue the latest (or a named) session |
 | `/paste [message]` | Send a clipboard image to the agent |

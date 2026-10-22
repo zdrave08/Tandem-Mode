@@ -11,6 +11,7 @@ export const en = {
   /usage                                      token usage, estimated cost, off-peak projection
   /budget [amount]                            show or set the budget in USD
   /new                                        new session
+  /compact                                    summarize the history into a new session to free up context
   /fork                                       new session with a copy of the current history
   /resume [id]                                resume the latest or a specific session
   /paste [message]                            send an image from the clipboard
@@ -46,6 +47,12 @@ export const en = {
   sessionNotFound: "Session '{id}' not found.",
   sessionNoneInDir: "No previous session in this directory.",
   sessionResumed: "Resumed session: {id} ({count} messages)",
+
+  compactNothing: "Nothing to compact yet.",
+  compactWorking: "Compacting {count} messages...",
+  compactDone:
+    "Compacted {before} messages into {after}. New session: {id} (previous session {previous} is untouched on disk)",
+  compactFailed: "Compaction failed, history unchanged: {message}",
 
   toolDenied: " (denied)",
   toolMoreLines: " … ({count} lines)",

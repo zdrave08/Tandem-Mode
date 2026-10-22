@@ -5,6 +5,7 @@ import {
   loadSessionMessages,
   appendSessionMessage,
 } from "../agent/session.js";
+import { compactConversation, SUMMARY_MODEL } from "../agent/compact.js";
 import { gitDiffTool } from "../agent/tools/gitDiff.js";
 import type { RuntimeState } from "./state.js";
 import { SYSTEM_PROMPT } from "./system-prompt.js";
@@ -122,6 +123,35 @@ export async function handleCommand(line: string, state: RuntimeState): Promise<
       state.messages = [systemMsg];
       await appendSessionMessage(state.session, systemMsg);
       console.log(t("sessionNew", { id: state.session.id }));
+      return "continue";
+    }
+
+    case "compact": {
+      if (state.messages.filter((m) => m.role !== "system").length < 2) {
+        console.log(t("compactNothing"));
+        return "continue";
+      }
+      console.log(t("compactWorking", { count: state.messages.length }));
+      try {
+        const first = state.messages[0];
+        const systemPrompt = first?.role === "system" && first.content ? first.content : SYSTEM_PROMPT;
+        const result = await compactConversation(state.env, state.messages, systemPrompt);
+        state.usage.add(SUMMARY_MODEL, result.usage);
+
+        // New session instead of rewriting the old file: the original history stays on
+        // disk untouched, and /resume of the new session loads the compact version.
+        const previous = state.session;
+        const next = await createSession(state.cwd);
+        for (const msg of result.messages) {
+          await appendSessionMessage(next, msg);
+        }
+        const before = state.messages.length;
+        state.session = next;
+        state.messages = result.messages;
+        console.log(t("compactDone", { before, after: result.messages.length, id: next.id, previous: previous.id }));
+      } catch (err) {
+        console.log(t("compactFailed", { message: err instanceof Error ? err.message : String(err) }));
+      }
       return "continue";
     }
 

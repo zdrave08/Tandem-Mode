@@ -7,22 +7,6 @@ independent of the others and small enough for a first PR.
 
 ---
 
-### 1. `/compact` — manual context compaction
-
-**Problem:** Long sessions accumulate a lot of tool output (full file dumps,
-shell output) in `state.messages`. There's no way to shrink that without
-starting a fresh session with `/new` and losing context.
-
-**Ask:** Add a `/compact` command that summarizes the current conversation
-(one call to the model, asking it to produce a compact summary of what's been
-done and decided so far) and replaces `state.messages` with
-`[system, summaryAsUserOrSystemMessage]`, keeping the session file going
-(append the summary, don't lose the original history on disk).
-
-**Files:** `src/repl/commands.ts`, `src/repl/state.ts`.
-
----
-
 ### 3. `/save-profile` and `/profile` — named config profiles
 
 **Problem:** Config is currently global/project/session only. Someone who

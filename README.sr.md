@@ -130,9 +130,11 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 | `/thinking [on\|off]` | Uključi/isključi thinking mode |
 | `/effort [low\|high\|max]` | Prikaži ili postavi reasoning effort |
 | `/status` | Trenutna sesija/podešavanja |
+| `/diff [--staged] [putanja]` | Diff radnog stabla, bez API poziva |
 | `/usage` | Tokeni, cena, off-peak projekcija |
 | `/budget [iznos]` | Prikaži ili postavi budžet sesije |
 | `/new` | Nova sesija |
+| `/compact` | Sažmi istoriju u novu sesiju da se oslobodi kontekst; stara sesija ostaje na disku |
 | `/fork` | Nova sesija sa kopijom trenutne istorije |
 | `/resume [id]` | Nastavi poslednju (ili navedenu) sesiju |
 | `/paste [poruka]` | Pošalji sliku iz clipboard-a agentu |

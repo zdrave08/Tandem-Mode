@@ -7,22 +7,6 @@ nezavisan od ostalih i dovoljno mali za prvi PR.
 
 ---
 
-### 1. `/compact` — ručna kompakcija konteksta
-
-**Problem:** Duge sesije nagomilaju dosta tool izlaza (pune ispise fajlova,
-shell izlaz) u `state.messages`. Nema načina da se to smanji bez pokretanja
-nove sesije preko `/new` i gubitka konteksta.
-
-**Zadatak:** Dodaj `/compact` komandu koja sumira trenutni razgovor (jedan
-poziv modelu, tražeći kompaktan rezime šta je do sad urađeno i odlučeno) i
-zamenjuje `state.messages` sa `[system, rezimeKaoUserIliSystemPoruka]`,
-čuvajući session fajl u životu (dodaje rezime, ne gubi originalnu istoriju
-na disku).
-
-**Fajlovi:** `src/repl/commands.ts`, `src/repl/state.ts`.
-
----
-
 ### 3. `/save-profile` i `/profile` — imenovani config profili
 
 **Problem:** Konfiguracija je trenutno samo global/project/session. Neko ko
