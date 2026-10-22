@@ -134,6 +134,8 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 | `/usage` | Tokeni, cena, off-peak projekcija |
 | `/budget [iznos]` | Prikaži ili postavi budžet sesije |
 | `/new` | Nova sesija |
+| `/save-profile <ime>` | Sačuvaj model, effort, budžet i review krugove kao imenovan profil |
+| `/profile [ime]` | Učitaj sačuvan profil, ili prikaži listu |
 | `/compact` | Sažmi istoriju u novu sesiju da se oslobodi kontekst; stara sesija ostaje na disku |
 | `/fork` | Nova sesija sa kopijom trenutne istorije |
 | `/resume [id]` | Nastavi poslednju (ili navedenu) sesiju |
@@ -185,6 +187,12 @@ Slojevito: **sesija** (komande u REPL-u) > **projekat**
 ide reviewer-u. `language` je jezik interfejsa (`en` ili `sr`, podrazumevano
 `en`); `--lang` flag i `TANDEM_LANG` env promenljiva ga nadjačavaju, tim
 redom. First-run wizard ga pita.
+
+**Profili:** `/save-profile <ime>` čuva trenutni model, reasoning effort, budžet i
+review krugove u `~/.tandem/profiles/<ime>.json`, a `/profile <ime>` ih vraća u
+sesiju koja radi (primenjuju se samo polja koja postoje u fajlu). `/profile` bez
+argumenta prikazuje sačuvane. Imena koriste `a-z`, `0-9`, `-` i `_`.
+Profili nikad ne sadrže `verifyCommand` ni API ključ.
 
 API ključ se nikad ne čuva u ovim fajlovima — živi u OS-ovom skladištu
 kredencijala (ili u `DEEPSEEK_API_KEY` env promenljivoj, koja ima

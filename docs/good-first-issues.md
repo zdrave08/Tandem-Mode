@@ -7,21 +7,6 @@ independent of the others and small enough for a first PR.
 
 ---
 
-### 3. `/save-profile` and `/profile` — named config profiles
-
-**Problem:** Config is currently global/project/session only. Someone who
-wants two personas (e.g. "fast and cheap" vs. "thorough") has to keep editing
-flags or `~/.tandem/config.json` by hand.
-
-**Ask:** `/save-profile <name>` saves the current runtime config (model,
-effort, budget, maxReviewLoops) to `~/.tandem/profiles/<name>.json`.
-`/profile <name>` loads one into the current session. `/profile` with no
-argument lists saved profiles.
-
-**Files:** new `src/config/profiles.ts`, wire into `src/repl/commands.ts`.
-
----
-
 ### 5. Notification hook on task/orchestration completion
 
 **Problem:** `/plan` runs can take a while. There's no way to know it's done

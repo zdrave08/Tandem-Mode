@@ -11,6 +11,8 @@ export const en = {
   /usage                                      token usage, estimated cost, off-peak projection
   /budget [amount]                            show or set the budget in USD
   /new                                        new session
+  /save-profile <name>                        save model, effort, budget and review loops as a profile
+  /profile [name]                             load a saved profile, or list them
   /compact                                    summarize the history into a new session to free up context
   /fork                                       new session with a copy of the current history
   /resume [id]                                resume the latest or a specific session
@@ -53,6 +55,14 @@ export const en = {
   compactDone:
     "Compacted {before} messages into {after}. New session: {id} (previous session {previous} is untouched on disk)",
   compactFailed: "Compaction failed, history unchanged: {message}",
+
+  profileInvalidName: "Profile names use a-z, 0-9, - and _ (up to 40 characters, starting with a letter or digit).",
+  profileSaved: "Profile '{name}' saved to {path}",
+  profileLoaded: "Loaded profile '{name}': {summary}",
+  profileNotFound: "Profile '{name}' not found. Type /profile to list saved profiles.",
+  profileInvalid: "Profile '{name}' is invalid: {reason}",
+  profileList: "Saved profiles: {names}",
+  profileNone: "No saved profiles. Save the current settings with /save-profile <name>.",
 
   toolDenied: " (denied)",
   toolMoreLines: " … ({count} lines)",

@@ -56,9 +56,8 @@ and `execute(args, ctx)`. Register it in `src/agent/tools/index.ts`.
 ## Good first issues
 
 Look for the `good first issue` label, or check
-[`docs/good-first-issues.md`](./docs/good-first-issues.md) for two scoped
-drafts — `/save-profile`/`/profile` and a notification hook on task completion
-are both open. Section 4 of the
+[`docs/good-first-issues.md`](./docs/good-first-issues.md) for a scoped
+draft — a notification hook on task completion is still open. Section 4 of the
 [development plan](./deepseek-cli-development-plan.md) (Serbian only — it's
 the maintainer's working roadmap, not user-facing docs) has the same list
 plus the reasoning behind each.

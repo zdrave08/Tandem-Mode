@@ -132,6 +132,8 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 | `/usage` | Tokens, cost, off-peak projection |
 | `/budget [amount]` | Show or set the session budget |
 | `/new` | Start a fresh session |
+| `/save-profile <name>` | Save model, effort, budget and review loops as a named profile |
+| `/profile [name]` | Load a saved profile, or list them |
 | `/compact` | Summarize the history into a new session to free up context; the old session stays on disk |
 | `/fork` | New session, carrying over the current history |
 | `/resume [id]` | Continue the latest (or a named) session |
@@ -182,6 +184,12 @@ in the current directory) > **global** (`~/.tandem/config.json`).
 the reviewer. `language` is the UI language (`en` or `sr`, default `en`); the
 `--lang` flag and the `TANDEM_LANG` environment variable override it, in that
 order. The first-run wizard asks for it.
+
+**Profiles:** `/save-profile <name>` stores the current model, reasoning effort,
+budget and review loops in `~/.tandem/profiles/<name>.json`, and `/profile <name>`
+loads them back into the running session (only the fields present in the file are
+applied). `/profile` alone lists the saved ones. Names use `a-z`, `0-9`, `-` and `_`.
+Profiles never include `verifyCommand` or the API key.
 
 The API key is never stored in these files — it lives in the OS credential
 store (or `DEEPSEEK_API_KEY` env var, which takes priority, for CI use).

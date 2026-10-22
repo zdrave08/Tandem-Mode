@@ -11,6 +11,8 @@ export const sr: Record<MessageKey, string> = {
   /usage                                      utrošak tokena, procenjena cena, off-peak projekcija
   /budget [iznos]                             prikaži ili postavi budžet u USD
   /new                                        nova sesija
+  /save-profile <ime>                         sačuvaj model, effort, budžet i review krugove kao profil
+  /profile [ime]                              učitaj sačuvan profil, ili prikaži listu
   /compact                                    sažmi istoriju u novu sesiju da se oslobodi kontekst
   /fork                                       nova sesija sa kopijom trenutne istorije
   /resume [id]                                nastavi poslednju ili navedenu sesiju
@@ -53,6 +55,14 @@ export const sr: Record<MessageKey, string> = {
   compactDone:
     "Sažeto {before} poruka u {after}. Nova sesija: {id} (prethodna sesija {previous} ostaje netaknuta na disku)",
   compactFailed: "Sažimanje nije uspelo, istorija je nepromenjena: {message}",
+
+  profileInvalidName: "Imena profila koriste a-z, 0-9, - i _ (do 40 karaktera, počinju slovom ili cifrom).",
+  profileSaved: "Profil '{name}' sačuvan u {path}",
+  profileLoaded: "Učitan profil '{name}': {summary}",
+  profileNotFound: "Profil '{name}' nije pronađen. Ukucaj /profile za listu sačuvanih profila.",
+  profileInvalid: "Profil '{name}' nije ispravan: {reason}",
+  profileList: "Sačuvani profili: {names}",
+  profileNone: "Nema sačuvanih profila. Sačuvaj trenutna podešavanja sa /save-profile <ime>.",
 
   toolDenied: " (odbijeno)",
   toolMoreLines: " … ({count} linija)",

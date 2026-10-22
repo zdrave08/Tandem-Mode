@@ -7,6 +7,14 @@ import {
 } from "../agent/session.js";
 import { compactConversation, SUMMARY_MODEL } from "../agent/compact.js";
 import { gitDiffTool } from "../agent/tools/gitDiff.js";
+import {
+  describeProfile,
+  listProfiles,
+  loadProfile,
+  normalizeProfileName,
+  saveProfile,
+  type Profile,
+} from "../config/profiles.js";
 import type { RuntimeState } from "./state.js";
 import { SYSTEM_PROMPT } from "./system-prompt.js";
 import { t } from "../i18n/index.js";
@@ -123,6 +131,60 @@ export async function handleCommand(line: string, state: RuntimeState): Promise<
       state.messages = [systemMsg];
       await appendSessionMessage(state.session, systemMsg);
       console.log(t("sessionNew", { id: state.session.id }));
+      return "continue";
+    }
+
+    case "save-profile": {
+      const name = normalizeProfileName(arg);
+      if (!name) {
+        console.log(arg ? t("profileInvalidName") : t("usageLine", { syntax: "/save-profile <name>" }));
+        return "continue";
+      }
+      const profile: Profile = {
+        model: state.model,
+        reasoningEffort: state.reasoningEffort,
+        maxReviewLoops: state.maxReviewLoops,
+        ...(state.budgetUsd !== undefined ? { budgetUsd: state.budgetUsd } : {}),
+      };
+      try {
+        const filePath = await saveProfile(name, profile);
+        console.log(t("profileSaved", { name, path: filePath }));
+      } catch (err) {
+        console.log(t("errorPrefix", { message: err instanceof Error ? err.message : String(err) }));
+      }
+      return "continue";
+    }
+
+    case "profile": {
+      if (!arg) {
+        try {
+          const names = await listProfiles();
+          console.log(names.length > 0 ? t("profileList", { names: names.join(", ") }) : t("profileNone"));
+        } catch (err) {
+          console.log(t("errorPrefix", { message: err instanceof Error ? err.message : String(err) }));
+        }
+        return "continue";
+      }
+      const name = normalizeProfileName(arg);
+      if (!name) {
+        console.log(t("profileInvalidName"));
+        return "continue";
+      }
+      try {
+        const profile = await loadProfile(name);
+        if (!profile) {
+          console.log(t("profileNotFound", { name }));
+          return "continue";
+        }
+        // Only the fields present in the profile are applied; the rest of the session is left alone.
+        if (profile.model) state.model = profile.model;
+        if (profile.reasoningEffort) state.reasoningEffort = profile.reasoningEffort;
+        if (profile.budgetUsd !== undefined) state.budgetUsd = profile.budgetUsd;
+        if (profile.maxReviewLoops !== undefined) state.maxReviewLoops = profile.maxReviewLoops;
+        console.log(t("profileLoaded", { name, summary: describeProfile(profile) }));
+      } catch (err) {
+        console.log(t("profileInvalid", { name, reason: err instanceof Error ? err.message : String(err) }));
+      }
       return "continue";
     }
 
