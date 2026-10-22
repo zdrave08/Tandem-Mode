@@ -23,21 +23,6 @@ na disku).
 
 ---
 
-### 2. `/diff` — prikaz working-tree diff-a bez pozivanja agenta
-
-**Problem:** `git_diff` postoji kao alat koji *agent* može pozvati, ali nema
-brz način da *korisnik* samo vidi šta se dosad promenilo bez trošenja poteza
-da to od agenta traži.
-
-**Zadatak:** `/diff` REPL komanda koja pokreće istu logiku kao
-`src/agent/tools/gitDiff.ts` (uključujući `--intent-to-add` trik za nove
-fajlove) direktno, ispisujući diff u terminal — bez API poziva.
-
-**Fajlovi:** `src/repl/commands.ts` (novi case), može ponovo koristiti
-`gitDiffTool.execute`.
-
----
-
 ### 3. `/save-profile` i `/profile` — imenovani config profili
 
 **Problem:** Konfiguracija je trenutno samo global/project/session. Neko ko

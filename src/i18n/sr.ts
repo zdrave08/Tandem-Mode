@@ -7,6 +7,7 @@ export const sr: Record<MessageKey, string> = {
   /thinking [on|off]                          uključi/isključi thinking mode
   /effort [low|high|max]                      prikaži ili promeni reasoning effort
   /status                                     trenutna podešavanja i sesija
+  /diff [--staged] [putanja]                  prikaži diff radnog stabla (bez API poziva)
   /usage                                      utrošak tokena, procenjena cena, off-peak projekcija
   /budget [iznos]                             prikaži ili postavi budžet u USD
   /new                                        nova sesija

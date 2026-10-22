@@ -7,6 +7,7 @@ export const en = {
   /thinking [on|off]                          toggle thinking mode
   /effort [low|high|max]                      show or change reasoning effort
   /status                                     current settings and session
+  /diff [--staged] [path]                     show the working-tree diff (no API call)
   /usage                                      token usage, estimated cost, off-peak projection
   /budget [amount]                            show or set the budget in USD
   /new                                        new session

@@ -5,6 +5,7 @@ import {
   loadSessionMessages,
   appendSessionMessage,
 } from "../agent/session.js";
+import { gitDiffTool } from "../agent/tools/gitDiff.js";
 import type { RuntimeState } from "./state.js";
 import { SYSTEM_PROMPT } from "./system-prompt.js";
 import { t } from "../i18n/index.js";
@@ -65,6 +66,17 @@ export async function handleCommand(line: string, state: RuntimeState): Promise<
       console.log(`Max review loops: ${state.maxReviewLoops}`);
       console.log(t("statusVerify", { value: state.verifyCommand ?? t("statusVerifyNone") }));
       console.log(t("statusMessages", { count: state.messages.length }));
+      return "continue";
+    }
+
+    case "diff": {
+      const staged = rest[0] === "--staged";
+      const scopePath = (staged ? rest.slice(1) : rest).join(" ").trim();
+      const result = await gitDiffTool.execute(
+        { staged, ...(scopePath ? { path: scopePath } : {}) },
+        { cwd: state.cwd, env: state.env, usage: state.usage }
+      );
+      console.log(result.output);
       return "continue";
     }
 

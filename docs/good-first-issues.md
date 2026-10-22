@@ -23,20 +23,6 @@ done and decided so far) and replaces `state.messages` with
 
 ---
 
-### 2. `/diff` — show the working-tree diff without invoking the agent
-
-**Problem:** `git_diff` exists as a tool the *agent* can call, but there's no
-quick way for the *user* to just see what's changed so far without spending a
-turn asking the agent to run it.
-
-**Ask:** A `/diff` REPL command that runs the same logic as
-`src/agent/tools/gitDiff.ts` (including the `--intent-to-add` trick for new
-files) directly, printing the diff to the terminal — no API call.
-
-**Files:** `src/repl/commands.ts` (new case), can reuse `gitDiffTool.execute`.
-
----
-
 ### 3. `/save-profile` and `/profile` — named config profiles
 
 **Problem:** Config is currently global/project/session only. Someone who
