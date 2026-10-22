@@ -5,6 +5,12 @@ import type { ToolDefinition } from "./types.js";
 const execFileAsync = promisify(execFile);
 const MAX_OUTPUT_CHARS = 30_000;
 
+// Tandem's own session logs and pasted images live under .tandem/ in the working
+// directory. They are not part of the user's change, and in repos that don't
+// ignore .tandem they would show up as untracked files in every diff.
+// `**/` also covers a .tandem in a subdirectory that Tandem was started from earlier.
+const SELF_PATHSPECS = [":(exclude,glob)**/.tandem/sessions/**", ":(exclude,glob)**/.tandem/tmp/**"];
+
 export const gitDiffTool: ToolDefinition = {
   name: "git_diff",
   description: "Show the git diff for the working directory (unstaged changes), optionally for a single path.",
@@ -20,7 +26,8 @@ export const gitDiffTool: ToolDefinition = {
   async execute(args, ctx) {
     const staged = Boolean(args["staged"]);
     const scopePath = args["path"] ? String(args["path"]) : undefined;
-    const gitArgs = ["diff", ...(staged ? ["--cached"] : []), ...(scopePath ? ["--", scopePath] : [])];
+    const pathspecs = ["--", ...(scopePath ? [scopePath] : []), ...SELF_PATHSPECS];
+    const gitArgs = ["diff", ...(staged ? ["--cached"] : []), ...pathspecs];
 
     try {
       const { stdout } = await execFileAsync("git", gitArgs, { cwd: ctx.cwd, maxBuffer: 10 * 1024 * 1024 });
@@ -31,7 +38,7 @@ export const gitDiffTool: ToolDefinition = {
 
       const { stdout: untracked } = await execFileAsync(
         "git",
-        ["ls-files", "--others", "--exclude-standard", "-z", ...(scopePath ? ["--", scopePath] : [])],
+        ["ls-files", "--others", "--exclude-standard", "-z", ...pathspecs],
         { cwd: ctx.cwd },
       );
       const files = untracked.split("\0").filter(Boolean);
