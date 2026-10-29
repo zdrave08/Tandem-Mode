@@ -1,22 +1,10 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { isReadOnlyCommand } from "./safeCommand.js";
 import type { ToolDefinition } from "./types.js";
 
 const MAX_OUTPUT_CHARS = 20_000;
 const HARD_MAX_BUFFER_CHARS = 5_000_000;
 const TIMEOUT_MS = 120_000;
-
-// Conservative allowlist: read-only commands that do not need approval.
-// Anything that does not match here is treated as destructive; better to ask
-// needlessly than to silently run something irreversible.
-const SAFE_COMMAND_PATTERNS: RegExp[] = [
-  /^git\s+(status|log|diff|show|branch|remote(\s+-v)?)\b/i,
-  /^(ls|dir)\b/i,
-  /^pwd$/i,
-  /^(cat|type)\s+\S/i,
-  /^echo\s+/i,
-  /^(php|node|npm|pnpm|npx|python|python3)\s+(-v|--version|-l)\b/i,
-  /^(which|where)\s+\S/i,
-];
 
 export interface RunShellOptions {
   /** Extra environment variables, merged over the current process environment. */
@@ -122,7 +110,8 @@ export const shellTool: ToolDefinition = {
   },
   isDestructive(args) {
     const command = String(args["command"] ?? "").trim();
-    return !SAFE_COMMAND_PATTERNS.some((p) => p.test(command));
+    // Conservative: only a command made entirely of known read-only parts skips the approval prompt.
+    return !isReadOnlyCommand(command);
   },
   async execute(args, ctx) {
     const command = String(args["command"] ?? "");

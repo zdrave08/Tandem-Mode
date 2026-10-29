@@ -71,6 +71,8 @@ export const en = {
   approvalHint: "y = allow, n = deny, a = always allow this tool for this session (answer below)",
   approvalPrompt: "Allow {call}? (y/n/a — a = always allow this tool)",
   autoApproved: "[--yes] auto-approved: {call}",
+  retrying: "Connection problem ({reason}). Retry {attempt}/{max} in {seconds}s…",
+  errorSessionSaved: "The session is saved: send a message (e.g. \"continue\") to pick up where it stopped.",
   errorPrefix: "Error: {message}",
   maxIterations:
     "Reached the maximum number of iterations without a final answer. The session is saved: send a message (e.g. \"continue\") to pick up where it stopped.",

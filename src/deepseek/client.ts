@@ -1,4 +1,5 @@
 import type { TandemEnv } from "../config/env.js";
+import { retryTransient } from "./errors.js";
 import type { ChatCompletionParams, ChatCompletionResult, ChatMessage, StreamEvent, UsageInfo } from "./types.js";
 
 async function* readSseLines(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
@@ -126,6 +127,14 @@ export async function* streamChatCompletion(
 
 /** Non-streaming call for planner/reviewer: no tools, just text/JSON + usage all at once. */
 export async function chatCompletionOnce(
+  env: TandemEnv,
+  params: Omit<ChatCompletionParams, "tools">
+): Promise<ChatCompletionResult> {
+  // Connection drops and 429/5xx are retried with backoff; anything else surfaces immediately.
+  return retryTransient(() => chatCompletionOnceAttempt(env, params), params.signal ? { signal: params.signal } : {});
+}
+
+async function chatCompletionOnceAttempt(
   env: TandemEnv,
   params: Omit<ChatCompletionParams, "tools">
 ): Promise<ChatCompletionResult> {

@@ -45,8 +45,10 @@ export function formatToolCall(name: string, args: Record<string, unknown>): For
       const offset = args["offset"] !== undefined ? `:${str(args["offset"])}` : "";
       return { title: `Read(${str(args["path"])}${offset})` };
     }
-    case "list_dir":
-      return { title: `List(${str(args["path"]) || "."})` };
+    case "list_dir": {
+      const depth = Number(args["depth"] ?? 1);
+      return { title: `List(${str(args["path"]) || "."}${depth > 1 ? `, depth ${depth}` : ""})` };
+    }
     case "search": {
       const where = str(args["glob"]) || str(args["path"]);
       return { title: `Search("${clip(str(args["pattern"]), 60)}"${where ? ` in ${where}` : ""})` };
@@ -91,12 +93,16 @@ export function formatToolResult(name: string, output: string, isError: boolean)
       return { summary: `${countLines(output)} lines read` };
     }
     case "search": {
-      if (output.trim() === "(no matches)") return { summary: "no matches" };
-      return { summary: `${countLines(output.trim())} matching lines` };
+      if (output.trim().startsWith("(no matches)")) return { summary: "no matches" };
+      // Count real hits ("path:line:text"), not the trailing notes of the built-in search.
+      const hits = output.split("\n").filter((l) => /:\d+:/.test(l)).length;
+      return { summary: `${hits} matching lines` };
     }
     case "list_dir": {
       if (output.trim() === "(empty)") return { summary: "empty" };
-      return { summary: `${countLines(output.trim())} entries` };
+      // Count only real entries ("d name" / "- name", possibly indented), not the trailing notes.
+      const entries = output.split("\n").filter((l) => /^\s*[d-] /.test(l)).length;
+      return { summary: `${entries} entries` };
     }
     case "edit":
       return { summary: output.trim().split("\n")[0] ?? "" };

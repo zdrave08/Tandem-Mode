@@ -1,5 +1,6 @@
 import type { TandemEnv } from "../config/env.js";
 import { streamChatCompletion } from "../deepseek/client.js";
+import { MAX_RETRIES, describeError, isTransientError, retryDelayMs, sleep } from "../deepseek/errors.js";
 import type { ChatMessage, ThinkingConfig, ToolCall, UsageInfo } from "../deepseek/types.js";
 import { findTool, toolSpecs, type ToolContext, type ToolResult } from "./tools/index.js";
 import { appendSessionMessage, type Session } from "./session.js";
@@ -14,6 +15,7 @@ export type AgentEvent =
   | { type: "usage"; usage: UsageInfo }
   | { type: "final"; content: string }
   | { type: "iteration"; n: number; max: number }
+  | { type: "retrying"; attempt: number; max: number; delayMs: number; reason: string }
   | { type: "max_iterations_reached" }
   | { type: "budget_exceeded"; spentUsd: number; budgetUsd: number }
   | { type: "interrupted" };
@@ -64,6 +66,8 @@ export async function* runAgentLoop(
   const maxIterations = opts.maxIterations ?? 25;
   // The limit moves by another "chunk" each time the user (or autoContinue) allows continuing.
   let limit = maxIterations;
+  // Consecutive failed attempts of the current model call; reset once a call succeeds.
+  let retryAttempt = 0;
 
   for (let iteration = 0; ; iteration++) {
     if (iteration >= limit) {
@@ -93,6 +97,8 @@ export async function* runAgentLoop(
     let reasoning = "";
     let content = "";
     const toolCallBuf = new Map<number, { id?: string; name?: string; args: string }>();
+    // Once anything has streamed in, a failed call cannot be repeated without duplicating output.
+    let received = false;
 
     try {
       for await (const ev of streamChatCompletion(opts.env, {
@@ -104,16 +110,19 @@ export async function* runAgentLoop(
       })) {
         switch (ev.type) {
           case "reasoning_delta":
+            received = true;
             if (reasoning.length < MAX_REASONING_CHARS) {
               reasoning += ev.delta;
             }
             yield { type: "reasoning_delta", delta: ev.delta };
             break;
           case "content_delta":
+            received = true;
             content += ev.delta;
             yield { type: "content_delta", delta: ev.delta };
             break;
           case "tool_call_delta": {
+            received = true;
             const buf = toolCallBuf.get(ev.index) ?? { args: "" };
             if (ev.id) buf.id = ev.id;
             if (ev.name) buf.name = ev.name;
@@ -130,7 +139,23 @@ export async function* runAgentLoop(
         }
       }
     } catch (err) {
-      if (!isAbortError(err)) throw err;
+      if (!isAbortError(err)) {
+        // A dropped connection or a 429/5xx before any output: wait and repeat this same call.
+        if (!received && retryAttempt < MAX_RETRIES && isTransientError(err)) {
+          const delayMs = retryDelayMs(retryAttempt);
+          retryAttempt++;
+          yield { type: "retrying", attempt: retryAttempt, max: MAX_RETRIES, delayMs, reason: describeError(err) };
+          try {
+            await sleep(delayMs, opts.signal);
+          } catch {
+            yield { type: "interrupted" };
+            return;
+          }
+          iteration--;
+          continue;
+        }
+        throw err;
+      }
       // Aborted mid-stream: keep whatever has arrived so far as a message, but without
       // tool_calls (incomplete arguments cannot be executed reliably).
       if (content || reasoning) {
@@ -145,6 +170,7 @@ export async function* runAgentLoop(
       yield { type: "interrupted" };
       return;
     }
+    retryAttempt = 0;
 
     const toolCalls: ToolCall[] = [...toolCallBuf.entries()]
       .sort(([a], [b]) => a - b)

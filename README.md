@@ -34,7 +34,13 @@ test. Reported as-is, not adjusted to fit expectations.
 
 - **Agentic loop** — `deepseek-v4-pro`/`deepseek-v4-flash` with tool calling:
   `read_file`, `list_dir`, `search`, `edit`, `git_diff`, `shell`, `view_image`,
-  `web_search`.
+  `web_search`. `list_dir` can return a nested tree (`depth` up to 3) in one call,
+  and `search` uses ripgrep when it is installed and a built-in search when not,
+  so nothing extra has to be installed.
+- **Resilient API calls** — connection drops, timeouts, `429` and `5xx` are
+  retried up to 3 times with backoff (the status line shows the retry); other
+  errors surface at once, with the underlying cause (e.g. `ECONNRESET`) and a
+  note that the session is saved.
 - **Two entry points** — interactive REPL for normal work, single-shot mode
   (`tandem "task" --yes`) for scripting and CI.
 - **Orchestration** (`/plan`) — a planner produces a JSON task list, workers
@@ -54,7 +60,9 @@ test. Reported as-is, not adjusted to fit expectations.
   the latest (or a named) one, `/fork` branches off without touching the
   original.
 - **Safety** — destructive actions (file edits, shell commands not on a small
-  read-only allowlist) always ask for confirmation; `y`/`n`/`a` where `a`
+  read-only allowlist) always ask for confirmation. A shell command skips the
+  prompt only if every part of it (`;`, `&&`, `|`) is read-only, and never with a
+  redirection, backticks, `$(...)` or a `{ }` block. `y`/`n`/`a` where `a`
   remembers the choice for that tool for the rest of the session. `--yes`
   bypasses this for CI but always prints what it auto-approved.
 - **Cost control** — usage is read only from the API's own `usage` field,

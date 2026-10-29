@@ -23,6 +23,7 @@ import type { RuntimeState } from "./repl/state.js";
 import type { ChatMessage, ThinkingConfig } from "./deepseek/types.js";
 import { formatToolCall, formatToolResult, type DiffLine } from "./ui/toolFormat.js";
 import { formatStatusLine } from "./ui/status.js";
+import { describeError } from "./deepseek/errors.js";
 
 /** Pseudo-tool used to ask "continue after the iteration limit?" through the same y/n/a mechanism. */
 const CONTINUE_TOOL = "__continue__";
@@ -91,6 +92,7 @@ function TurnView({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [iter, setIter] = useState<{ n: number; max: number } | null>(null);
+  const [retryNote, setRetryNote] = useState<string | null>(null);
 
   useEffect(() => {
     async function run(): Promise<void> {
@@ -150,15 +152,18 @@ function TurnView({
       function handleEvent(event: AgentEvent): void {
         switch (event.type) {
           case "reasoning_delta":
+            setRetryNote(null);
             setReasoning((prev) => {
               const next = prev + event.delta;
               return next.length > REASONING_DISPLAY_CAP ? next.slice(-REASONING_DISPLAY_CAP) : next;
             });
             break;
           case "content_delta":
+            setRetryNote(null);
             setContent((prev) => prev + event.delta);
             break;
           case "tool_call_start":
+            setRetryNote(null);
             setToolLog((prev) => [...prev, { id: event.id, name: event.name, args: event.args, status: "running" }]);
             break;
           case "tool_call_result":
@@ -184,6 +189,16 @@ function TurnView({
           case "iteration":
             setIter({ n: event.n, max: event.max });
             break;
+          case "retrying":
+            setRetryNote(
+              t("retrying", {
+                attempt: event.attempt,
+                max: event.max,
+                seconds: Math.max(1, Math.round(event.delayMs / 1000)),
+                reason: event.reason,
+              })
+            );
+            break;
           case "max_iterations_reached":
             setNotice((prev) => prev ?? t("maxIterations"));
             break;
@@ -201,7 +216,8 @@ function TurnView({
 
     run()
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : String(err));
+        setError(describeError(err));
+        setNotice(t("errorSessionSaved"));
       })
       .finally(() => {
         exit();
@@ -280,6 +296,7 @@ function TurnView({
       {content.length > 0 && <Text>{content}</Text>}
 
       {usageLine && <Text color="gray">{usageLine}</Text>}
+      {retryNote && <Text color="yellow">{retryNote}</Text>}
       {notice && <Text color="yellow">{notice}</Text>}
       {error && <Text color="red">{t("errorPrefix", { message: error })}</Text>}
 
@@ -385,7 +402,7 @@ async function runPlanTask(
     if (isAbortError(err)) {
       console.log(t("orchestrationInterrupted"));
     } else {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = describeError(err);
       console.error(t("orchestrationError", { message }));
       await notifyCompletion(state.notifyCommand, state.cwd, {
         outcome: "error",
@@ -726,6 +743,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  console.error(err instanceof Error ? err.message : String(err));
+  console.error(describeError(err));
   process.exitCode = 1;
 });

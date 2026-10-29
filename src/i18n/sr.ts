@@ -71,6 +71,8 @@ export const sr: Record<MessageKey, string> = {
   approvalHint: "y = dozvoli, n = odbij, a = uvek dozvoli ovaj alat ovoj sesiji (odgovor ispod)",
   approvalPrompt: "Dozvoli izvršavanje {call}? (y/n/a — a = uvek dozvoli ovaj alat)",
   autoApproved: "[--yes] auto-odobreno: {call}",
+  retrying: "Problem sa vezom ({reason}). Ponovni pokušaj {attempt}/{max} za {seconds}s…",
+  errorSessionSaved: "Sesija je sačuvana: pošalji poruku (npr. \"nastavi\") da nastavi tamo gde je stao.",
   errorPrefix: "Greška: {message}",
   maxIterations:
     "Dostignut je maksimalan broj iteracija bez finalnog odgovora. Sesija je sačuvana: pošalji poruku (npr. \"nastavi\") da nastavi tamo gde je stao.",

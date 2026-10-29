@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { searchFallback } from "./searchFallback.js";
 import type { ToolDefinition } from "./types.js";
 
 const execFileAsync = promisify(execFile);
@@ -7,7 +8,8 @@ const MAX_OUTPUT_CHARS = 20_000;
 
 export const searchTool: ToolDefinition = {
   name: "search",
-  description: "Search file contents with a regex pattern using ripgrep (rg).",
+  description:
+    "Search file contents with a regex pattern. Uses ripgrep (rg) when it is installed, otherwise a built-in search with the same parameters.",
   parameters: {
     type: "object",
     properties: {
@@ -37,10 +39,8 @@ export const searchTool: ToolDefinition = {
     } catch (err) {
       const e = err as { code?: string | number; message: string };
       if (e.code === "ENOENT") {
-        return {
-          output: "ripgrep (rg) is not installed or not on PATH. Install it for the search tool to work.",
-          isError: true,
-        };
+        // No ripgrep on this machine: fall back to the built-in search instead of failing.
+        return searchFallback({ cwd: ctx.cwd, searchPath, pattern, glob, caseInsensitive, signal: ctx.signal });
       }
       // rg exits with code 1 when there are no matches. That is not a tool error.
       if (e.code === 1) {
