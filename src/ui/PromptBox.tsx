@@ -5,6 +5,11 @@ import { applyKey, completeCommand, layoutRows, matchCommands, type Editor } fro
 const MAX_WIDTH = 120;
 const MAX_SUGGESTIONS = 8;
 
+/** Cuts text to `max` columns with an ellipsis, so a changing line never wraps and changes the box height. */
+function clip(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, Math.max(0, max - 1))}…` : text;
+}
+
 /** One screen row of the input, with the cursor drawn as an inverted character on its row. */
 function InputRow({ text, cursorColumn, prefix }: { text: string; cursorColumn: number | null; prefix: string }) {
   if (cursorColumn === null) {
@@ -38,20 +43,26 @@ function InputRow({ text, cursorColumn, prefix }: { text: string; cursorColumn: 
  */
 export function PromptBox({
   history,
-  footer,
+  getFooter,
   hint,
+  onToggleMode,
   onResult,
 }: {
   /** Earlier inputs, oldest first. */
   history: string[];
-  footer: string;
+  /** Read on every render, so it can reflect a mode change made with the Shift+Tab shortcut. */
+  getFooter: () => string;
   hint: string;
+  /** Shift+Tab: switch between chat and plan mode. */
+  onToggleMode: () => void;
   onResult: (line: string | null) => void;
 }) {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const [editor, setEditor] = useState<Editor>({ value: "", cursor: 0 });
   const [done, setDone] = useState(false);
+  // Bumped by the mode shortcut so the footer is read again.
+  const [, setModeTick] = useState(0);
   // Position while browsing history (history.length = the draft being typed) and that draft.
   const historyIndex = useRef(history.length);
   const draft = useRef("");
@@ -67,6 +78,12 @@ export function PromptBox({
 
   useInput((input, key) => {
     if (done) return;
+    // Shift+Tab flips the mode; plain Tab is command completion.
+    if (key.tab && key.shift) {
+      onToggleMode();
+      setModeTick((n) => n + 1);
+      return;
+    }
     const outcome = applyKey(editor, input, key);
     switch (outcome.type) {
       case "edit":
@@ -123,7 +140,7 @@ export function PromptBox({
       )}
       {!done && (
         <Box flexDirection="column" paddingX={2}>
-          <Text dimColor>{footer}</Text>
+          <Text dimColor>{clip(getFooter(), width - 4)}</Text>
           <Text dimColor>{hint}</Text>
         </Box>
       )}

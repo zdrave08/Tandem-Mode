@@ -15,6 +15,8 @@ export interface RuntimeState {
   maxIterations: number;
   /** Continue without asking at the iteration limit (applies only when a budget is set). */
   autoContinue: boolean;
+  /** The user's choice: "chat" sends each message to the chosen model, "plan" runs it through planner/worker/reviewer. */
+  mode: "chat" | "plan";
   /** What it is doing right now, for the status line. */
   activeMode: "chat" | "plan";
   verifyCommand?: string;

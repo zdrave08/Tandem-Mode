@@ -588,7 +588,10 @@ async function runRepl(state: RuntimeState): Promise<void> {
       continue;
     }
 
-    beginTurn((signal) => runTurn(state, line, askApproval, signal));
+    // In plan mode every plain message goes through planner/worker/reviewer, not just `/plan <task>`.
+    beginTurn((signal) =>
+      state.mode === "plan" ? runPlanTask(state, line, askApproval, signal) : runTurn(state, line, askApproval, signal)
+    );
   }
 
   await lastTurn;
@@ -600,8 +603,10 @@ function promptFooter(state: RuntimeState): string {
   const thinking = state.thinkingEnabled
     ? t("promptThinkingOn", { effort: state.reasoningEffort })
     : t("promptThinkingOff");
-  const parts = [shortModel(state.model), thinking];
+  // In plan mode the models are fixed by role, so the chosen model and thinking level do not apply.
+  const parts = state.mode === "plan" ? [t("promptModePlan")] : [shortModel(state.model), thinking];
   if (state.budgetUsd !== undefined) parts.push(t("promptBudget", { value: `$${state.budgetUsd.toFixed(2)}` }));
+  parts.push(state.mode === "plan" ? t("promptToggleToChat") : t("promptToggleToPlan"));
   return parts.join(" · ");
 }
 
@@ -615,8 +620,11 @@ async function readTask(state: RuntimeState, history: string[]): Promise<string 
   const app = render(
     <PromptBox
       history={history}
-      footer={promptFooter(state)}
+      getFooter={() => promptFooter(state)}
       hint={t("promptHint")}
+      onToggleMode={() => {
+        state.mode = state.mode === "plan" ? "chat" : "plan";
+      }}
       onResult={(line) => {
         result = line;
       }}
@@ -703,7 +711,10 @@ async function runReplTty(state: RuntimeState): Promise<void> {
       continue;
     }
 
-    await runTurnOf((signal) => runTurn(state, line, menuOnly, signal));
+    // In plan mode every plain message goes through planner/worker/reviewer, not just `/plan <task>`.
+    await runTurnOf((signal) =>
+      state.mode === "plan" ? runPlanTask(state, line, menuOnly, signal) : runTurn(state, line, menuOnly, signal)
+    );
   }
 }
 
@@ -843,6 +854,7 @@ async function main(): Promise<void> {
     maxReviewLoops: parsed.maxReviewLoops ?? config.maxReviewLoops ?? DEFAULT_CONFIG.maxReviewLoops,
     maxIterations: parsed.maxIterations ?? config.maxIterations ?? DEFAULT_CONFIG.maxIterations,
     autoContinue: parsed.autoContinue || config.autoContinue === true,
+    mode: "chat",
     activeMode: "chat",
     autoApprove: parsed.autoApprove,
     alwaysApprovedTools: new Set(),

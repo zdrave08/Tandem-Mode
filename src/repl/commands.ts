@@ -34,6 +34,17 @@ export async function handleCommand(line: string, state: RuntimeState): Promise<
     case "quit":
       return "exit";
 
+    case "mode":
+      if (arg === "plan" || arg === "chat") {
+        state.mode = arg;
+        console.log(arg === "plan" ? t("modeSetPlan") : t("modeSetChat", { model: state.model }));
+      } else if (!arg) {
+        console.log(t("modeCurrent", { mode: state.mode }));
+      } else {
+        console.log(t("usageLine", { syntax: "/mode [chat|plan]" }));
+      }
+      return "continue";
+
     case "model":
       if (arg === "deepseek-v4-pro" || arg === "deepseek-v4-flash") {
         state.model = arg;

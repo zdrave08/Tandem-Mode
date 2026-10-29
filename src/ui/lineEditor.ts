@@ -183,6 +183,7 @@ export function layoutRows(value: string, cursor: number, width: number): Row[] 
 /** Slash commands offered while the text starts with `/`. */
 export const SLASH_COMMANDS = [
   "/plan",
+  "/mode",
   "/model",
   "/thinking",
   "/effort",
@@ -212,7 +213,7 @@ export function matchCommands(value: string): string[] {
 export function completeCommand(editor: Editor): Editor {
   const [first] = matchCommands(editor.value);
   if (!first) return editor;
-  const takesArgument = ["/plan", "/model", "/thinking", "/effort", "/budget", "/save-profile", "/profile", "/resume", "/diff", "/paste"].includes(first);
+  const takesArgument = ["/plan", "/mode", "/model", "/thinking", "/effort", "/budget", "/save-profile", "/profile", "/resume", "/diff", "/paste"].includes(first);
   const value = takesArgument ? `${first} ` : first;
   return { value, cursor: value.length };
 }

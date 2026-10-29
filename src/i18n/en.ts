@@ -2,7 +2,8 @@
 // Placeholders are written as {name} and filled in by `t()`.
 export const en = {
   helpText: `Commands:
-  /plan <task>                                planner/worker/reviewer orchestration
+  /plan <task>                                planner/worker/reviewer orchestration for one task
+  /mode [chat|plan]                           stay in plan mode: every message is planned, executed and reviewed
   /model [deepseek-v4-pro|deepseek-v4-flash]  show or change the model
   /thinking [on|off]                          toggle thinking mode
   /effort [low|high|max]                      show or change reasoning effort
@@ -25,6 +26,13 @@ export const en = {
   unknownCommand: "Unknown command: /{cmd}. Type /help.",
 
   modelCurrent: "Current model: {model}",
+  modeCurrent: "Mode: {mode} (/mode chat or /mode plan to change)",
+  modeSetPlan:
+    "Plan mode on: every message is planned by v4-pro, executed by v4-flash and reviewed by v4-pro. /mode chat goes back to a single model.",
+  modeSetChat: "Chat mode: messages go straight to {model}.",
+  promptModePlan: "PLAN: v4-pro plans · v4-flash executes",
+  promptToggleToPlan: "Shift+Tab: plan",
+  promptToggleToChat: "Shift+Tab: chat",
   effortCurrent: "Current effort: {effort}",
 
   statusSession: "Session: {id}",

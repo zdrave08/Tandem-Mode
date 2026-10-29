@@ -2,7 +2,8 @@ import type { MessageKey } from "./en.js";
 
 export const sr: Record<MessageKey, string> = {
   helpText: `Komande:
-  /plan <zadatak>                             planner/worker/reviewer orkestracija
+  /plan <zadatak>                             planner/worker/reviewer orkestracija za jedan zadatak
+  /mode [chat|plan]                           ostani u plan režimu: svaka poruka se planira, izvršava i pregleda
   /model [deepseek-v4-pro|deepseek-v4-flash]  prikaži ili promeni model
   /thinking [on|off]                          uključi/isključi thinking mode
   /effort [low|high|max]                      prikaži ili promeni reasoning effort
@@ -25,6 +26,13 @@ export const sr: Record<MessageKey, string> = {
   unknownCommand: "Nepoznata komanda: /{cmd}. Ukucaj /help.",
 
   modelCurrent: "Trenutni model: {model}",
+  modeCurrent: "Režim: {mode} (/mode chat ili /mode plan za promenu)",
+  modeSetPlan:
+    "Plan režim uključen: svaku poruku planira v4-pro, izvršava v4-flash, a pregleda v4-pro. /mode chat vraća na jedan model.",
+  modeSetChat: "Chat režim: poruke idu direktno na {model}.",
+  promptModePlan: "PLAN: v4-pro planira · v4-flash izvršava",
+  promptToggleToPlan: "Shift+Tab: plan",
+  promptToggleToChat: "Shift+Tab: chat",
   effortCurrent: "Trenutni effort: {effort}",
 
   statusSession: "Sesija: {id}",

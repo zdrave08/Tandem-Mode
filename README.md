@@ -46,7 +46,14 @@ test. Reported as-is, not adjusted to fit expectations.
 - **Orchestration** (`/plan`) — a planner produces a JSON task list, workers
   execute each task with a fresh minimal context, a reviewer checks the git
   diff against the original task and either approves or requests corrections
-  (capped by `max_review_loops`).
+  (capped by `max_review_loops`). The planner and reviewer use `deepseek-v4-pro`,
+  the workers `deepseek-v4-flash`; these roles are fixed and do not follow `/model`.
+- **Plan mode** (`/mode plan`) — stays on until you switch back: every message you
+  send is planned, executed and reviewed as with `/plan`, without typing it each
+  time. `/mode chat` returns to sending messages straight to the chosen model, and
+  `/mode` shows the current one. In the prompt, **Shift+Tab** toggles between the
+  two (the line under the box shows which is active). Slash commands such as
+  `/status` still work in plan mode.
 - **Cache-aware prompts** — the worker's system prompt + repo map + plan stay
   byte-identical across calls in one orchestration run, so DeepSeek's context
   cache actually hits. Measured live: cache-hit tokens grew call over call
@@ -151,7 +158,8 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 
 | Command | Effect |
 |---|---|
-| `/plan <task>` | Planner/worker/reviewer orchestration |
+| `/plan <task>` | Planner/worker/reviewer orchestration for one task |
+| `/mode [chat\|plan]` | Stay in plan mode (every message is planned, executed, reviewed) or go back |
 | `/model [name]` | Show or switch model |
 | `/thinking [on\|off]` | Toggle thinking mode |
 | `/effort [low\|high\|max]` | Show or set reasoning effort |
