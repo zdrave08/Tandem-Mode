@@ -22,7 +22,8 @@ import { appendSessionMessage, createSession, findLatestSession, loadSessionMess
 import type { RuntimeState } from "./repl/state.js";
 import type { ChatMessage, ThinkingConfig } from "./deepseek/types.js";
 import { formatToolCall, formatToolResult, type DiffLine } from "./ui/toolFormat.js";
-import { formatStatusLine } from "./ui/status.js";
+import { formatStatusLine, shortModel } from "./ui/status.js";
+import { PromptBox } from "./ui/PromptBox.js";
 import { describeError } from "./deepseek/errors.js";
 import { ApprovalMenu } from "./ui/ApprovalMenu.js";
 import { CONTINUE_TOOL } from "./ui/approvalModel.js";
@@ -594,51 +595,36 @@ async function runRepl(state: RuntimeState): Promise<void> {
   if (!closed) rl.close();
 }
 
-// ANSI styling for the plain-text parts (rule and prompt), which are printed outside Ink.
-const ESC = String.fromCharCode(27);
-const ANSI_DIM = `${ESC}[2m`;
-const ANSI_BOLD_CYAN = `${ESC}[1;36m`;
-const ANSI_RESET = `${ESC}[0m`;
-
-/** Dim horizontal rule the width of the terminal; separates turns the way a boxed UI would. */
-function rule(): string {
-  const width = Math.max(20, Math.min(process.stdout.columns ?? 80, 120));
-  return `${ANSI_DIM}${"─".repeat(width)}${ANSI_RESET}`;
+/** The line under the input box: current model and settings. */
+function promptFooter(state: RuntimeState): string {
+  const thinking = state.thinkingEnabled
+    ? t("promptThinkingOn", { effort: state.reasoningEffort })
+    : t("promptThinkingOff");
+  const parts = [shortModel(state.model), thinking];
+  if (state.budgetUsd !== undefined) parts.push(t("promptBudget", { value: `$${state.budgetUsd.toFixed(2)}` }));
+  return parts.join(" · ");
 }
 
-const TTY_PROMPT = `${ANSI_BOLD_CYAN}❯${ANSI_RESET} `;
-
 /**
- * Reads one line with a fresh readline interface, then closes it. On a TTY the interface must not
- * exist while a turn runs: readline and Ink would both consume the same keystrokes (echoing letters
- * and submitting lines while the approval menu is waiting for a key). Returns `null` on Ctrl+C/Ctrl+D.
+ * Shows the boxed prompt and resolves with what was typed, or `null` on Ctrl+C / Ctrl+D.
+ * Ink owns the keyboard while the box is mounted, so no readline interface may exist at the same time
+ * (both would consume the same keystrokes).
  */
-function promptLine(history: string[]): Promise<{ line: string | null; history: string[] }> {
-  return new Promise((resolve) => {
-    // Ink releases stdin when a turn ends; without this the process could exit while we wait for input.
-    process.stdin.ref();
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      prompt: TTY_PROMPT,
-      history,
-      historySize: 200,
-      terminal: true,
-    });
-    let answered = false;
-    rl.once("line", (line) => {
-      answered = true;
-      // `history` exists at runtime (newest first) but is missing from the Node typings we build against.
-      const updated = (rl as unknown as { history: string[] }).history;
-      rl.close();
-      resolve({ line, history: updated });
-    });
-    rl.once("close", () => {
-      if (!answered) resolve({ line: null, history });
-    });
-    console.log(rule());
-    rl.prompt();
-  });
+async function readTask(state: RuntimeState, history: string[]): Promise<string | null> {
+  let result: string | null = null;
+  const app = render(
+    <PromptBox
+      history={history}
+      footer={promptFooter(state)}
+      hint={t("promptHint")}
+      onResult={(line) => {
+        result = line;
+      }}
+    />,
+    { exitOnCtrlC: false }
+  );
+  await app.waitUntilExit();
+  return result;
 }
 
 /**
@@ -674,13 +660,14 @@ async function runReplTty(state: RuntimeState): Promise<void> {
     }
   };
 
-  let history: string[] = [];
+  const history: string[] = [];
   for (;;) {
-    const answer = await promptLine(history);
-    history = answer.history;
-    if (answer.line === null) break;
-    const line = answer.line.trim();
+    const typed = await readTask(state, history);
+    if (typed === null) break;
+    const line = typed.trim();
     if (!line) continue;
+    if (history[history.length - 1] !== line) history.push(line);
+    if (history.length > 200) history.shift();
 
     if (line.startsWith("/plan ")) {
       const task = line.slice("/plan ".length).trim();

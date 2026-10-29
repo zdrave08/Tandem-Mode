@@ -78,9 +78,16 @@ test. Reported as-is, not adjusted to fit expectations.
 - **Approval menu** — in a terminal, an action that needs approval opens a boxed
   prompt (the diff for an edit, the full command for the shell) with *Yes / Yes,
   don't ask again for this tool / No*. Pick with ↑/↓ and Enter, with `1`–`3`, or
-  with `y` / `a` / `n`; Esc denies. Turns are separated by a rule and the next
-  prompt is a plain `❯` line with history (↑/↓). With piped input the old `y/n/a`
-  line prompt is used.
+  with `y` / `a` / `n`; Esc denies. With piped input the old `y/n/a` line prompt
+  is used.
+- **Boxed prompt** — in a terminal the task is typed into a bordered box that
+  wraps long text, shows the model and settings underneath, and stays in the
+  scrollback as a record of what you sent. Enter sends; Alt+Enter (or a trailing
+  `\` then Enter) adds a new line, and pasted multi-line text keeps its line
+  breaks. ↑/↓ recall earlier tasks (or move between lines), ←/→ move the cursor
+  (Alt+←/→ by word), Ctrl+A/E go to line start/end, Ctrl+U/K/W delete, and typing
+  `/` lists the matching commands (Tab completes). Ctrl+C clears the text, and
+  quits when the box is empty.
 - **ESC to interrupt** — cancels the in-flight call (and any running shell
   command) cleanly, keeping whatever was generated so far.
 - **Cross-platform** — the shell tool runs PowerShell natively on Windows and
