@@ -97,9 +97,9 @@ export async function runOneAttempt(
       runWorkerTurn: (turn: WorkerTurn) =>
         runHeadlessTurn(turn.messages, turn.model, turn.thinking, env, repoPath, session, usage, stats),
     });
-    // Orkestracija nema jedan "final" signal kao obična petlja — "completed"
-    // ovde znači da je pipeline stigao do kraja bez izuzetka, ne da je
-    // reviewer odobrio (to pokriva dimenzija "correct" preko verify skripte).
+    // Orchestration has no single "final" signal like the plain loop: "completed" here
+    // means the pipeline ran to the end without an exception, not that the reviewer
+    // approved (that is covered by the "correct" dimension via the verify script).
     stats.completed = true;
   } else {
     const model: "deepseek-v4-pro" | "deepseek-v4-flash" = config === "pro-only" ? "deepseek-v4-pro" : "deepseek-v4-flash";
@@ -218,8 +218,8 @@ export async function runBenchmark(
           durationMs: 0,
           error: message,
         });
-        // Vrati repo u čisto stanje čak i posle pucanja usred pokušaja,
-        // da sledeći task/config ne nasledi polu-izmenjeno radno stablo.
+        // Put the repo back in a clean state even after a failure mid-attempt, so the
+        // next task/config does not inherit a half-modified working tree.
         await resetRepo(repoPath, baselineRef).catch(() => {});
       }
     }

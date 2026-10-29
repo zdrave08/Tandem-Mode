@@ -6,15 +6,15 @@ export interface BenchmarkTask {
   id: string;
   /** Prompt given to the agent, verbatim. */
   description: string;
-  /** Za dimenziju 5 (nepotrebne izmene) — fajlovi koje bi razuman fix trebalo da dotakne. */
+  /** For dimension 5 (unnecessary changes): the files a reasonable fix should touch. */
   expectedFiles: string[];
-  /** Shell komanda koja vraća target repo na čisto polazno stanje pre poteza. */
+  /** Shell command that resets the target repo to a clean starting state before the turn. */
   setup?: string;
-  /** Npr. "php -l %file%" ili "npm run build". */
+  /** E.g. "php -l %file%" or "npm run build". */
   build?: string;
-  /** Npr. "npm test". */
+  /** E.g. "npm test". */
   test?: string;
-  /** Shell komanda koja izlazi sa 0 ako je zadatak stvarno ispunjen. */
+  /** Shell command that exits 0 if the task is really fulfilled. */
   verify: string;
 }
 
@@ -33,8 +33,8 @@ export interface BenchmarkResult {
   costUsd: number;
   offPeakCostUsd: number;
   durationMs: number;
-  /** Dimenzija 8 (arhitektura) je namerno kvalitativna — popunjava se ručno/naknadno, ne ovde. */
+  /** Dimension 8 (architecture) is qualitative on purpose: filled in by hand/afterwards, not here. */
   architectureNotes?: string;
-  /** Postavljeno kad je sam pokušaj pukao (mrežna greška, malformisan JSON i sl.) — ostala polja su tada default/prazna. */
+  /** Set when the attempt itself failed (network error, malformed JSON, etc.); the other fields are then default/empty. */
   error?: string;
 }

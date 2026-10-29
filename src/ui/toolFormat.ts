@@ -1,6 +1,6 @@
 /**
- * Čitljiv prikaz poziva alata i njihovih rezultata u terminalu.
- * Čiste funkcije bez Ink/React zavisnosti, da se mogu proveriti i van UI-ja.
+ * Readable display of tool calls and their results in the terminal.
+ * Pure functions with no Ink/React dependency, so they can be checked outside the UI.
  */
 
 export interface DiffLine {
@@ -14,7 +14,7 @@ export interface FormattedCall {
 }
 
 export interface FormattedResult {
-  /** Jedna linija umesto sirovog izlaza; kad nije postavljeno, prikazuje se prvih par linija. */
+  /** One line instead of the raw output; when unset, the first few lines are shown. */
   summary?: string;
 }
 

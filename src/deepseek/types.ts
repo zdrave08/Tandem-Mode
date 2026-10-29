@@ -8,12 +8,12 @@ export interface ToolCall {
 
 export interface ChatMessage {
   role: ChatRole;
-  /** `null` je legalno za assistant poruku koja je samo tool_calls, bez teksta. */
+  /** `null` is legal for an assistant message that is only tool_calls, with no text. */
   content: string | null;
-  /** Samo za role "assistant" kad su tools u igri. */
+  /** Only for role "assistant" when tools are in play. */
   reasoningContent?: string;
   toolCalls?: ToolCall[];
-  /** Samo za role "tool" — koji poziv ovaj rezultat zatvara. */
+  /** Only for role "tool": which call this result closes. */
   toolCallId?: string;
 }
 
@@ -35,7 +35,7 @@ export interface ChatCompletionParams {
   messages: ChatMessage[];
   thinking?: ThinkingConfig;
   tools?: ToolSpec[];
-  /** Zahteva validan JSON string kao `content` — šema se opisuje u promptu, API je ne nameće. */
+  /** Requires a valid JSON string as `content`; the schema is described in the prompt, the API does not enforce it. */
   jsonOutput?: boolean;
   signal?: AbortSignal;
 }
@@ -57,13 +57,13 @@ export interface UsageInfo {
 
 export type StreamEvent =
   | { type: "content_delta"; delta: string }
-  // Prikazuje se korisniku. Bez tools API ovo tiho ignoriše ako se vrati u
-  // history; sa tools, prethodni reasoning_content treba vratiti uz naredni
-  // poziv u istom tool-calling nizu, pa ga agent petlja čuva i prosleđuje.
+  // Shown to the user. Without tools the API silently ignores this if it is sent back in
+  // the history; with tools, the previous reasoning_content must be sent back with the next
+  // call in the same tool-calling sequence, so the agent loop keeps it and passes it on.
   | { type: "reasoning_delta"; delta: string }
-  // Fragment jednog tool poziva (OpenAI-stil): prvi fragment po `index` nosi
-  // `id`+`name`, svi naredni nose samo komad `argumentsDelta` — pozivalac
-  // spaja po `index`.
+  // A fragment of one tool call (OpenAI style): the first fragment per `index` carries
+  // `id`+`name`, all later ones carry only a piece of `argumentsDelta`; the caller
+  // merges them by `index`.
   | { type: "tool_call_delta"; index: number; id?: string; name?: string; argumentsDelta?: string }
   | { type: "usage"; usage: UsageInfo }
   | { type: "done"; finishReason: string | null };

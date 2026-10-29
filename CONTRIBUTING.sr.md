@@ -35,6 +35,9 @@ da pokreneš bilo šta što stvarno zove model.
 - **Bezbednost.** Ništa što menja fajlove, pokreće shell komande, ili na bilo
   koji način menja stanje ne sme se desiti tiho. Ako dodaješ alat, daj mu
   ispravan `isDestructive()` — kad nisi siguran, tretiraj kao destruktivno.
+- **Komentari u kodu su samo na engleskom.** Misli se na `//`, `/* */` i `/** */`
+  komentare u `src/`. Objasni *zašto*, ne šta. Srpski tekstovi interfejsa u
+  `src/i18n/sr.ts` i srpska dokumentacija ostaju kakvi jesu.
 - **Male izmene.** Jedna stvar odjednom je lakša za pregled nego redizajn.
 
 ## Gde šta živi

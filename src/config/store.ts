@@ -21,7 +21,7 @@ async function readConfigFile(filePath: string): Promise<TandemConfig> {
   }
 }
 
-/** Global < project. Session-level overrides (slash komande) žive u runtime stanju, ne ovde. */
+/** Global < project. Session-level overrides (slash commands) live in the runtime state, not here. */
 export async function loadConfig(cwd: string): Promise<TandemConfig> {
   const [global, project] = await Promise.all([
     readConfigFile(globalConfigPath()),

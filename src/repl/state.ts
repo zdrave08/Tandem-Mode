@@ -11,16 +11,16 @@ export interface RuntimeState {
   reasoningEffort: "low" | "high" | "max";
   budgetUsd?: number;
   maxReviewLoops: number;
-  /** Poziva modela po "komadu" jednog poteza; na granici se pita za nastavak. */
+  /** Model calls per "chunk" of one turn; at the limit the user is asked whether to continue. */
   maxIterations: number;
-  /** Nastavi bez pitanja na granici iteracija (važi samo kad je postavljen budžet). */
+  /** Continue without asking at the iteration limit (applies only when a budget is set). */
   autoContinue: boolean;
-  /** Šta trenutno radi — za statusnu liniju. */
+  /** What it is doing right now, for the status line. */
   activeMode: "chat" | "plan";
   verifyCommand?: string;
   notifyCommand?: string;
   autoApprove: boolean;
-  /** Alati koje je korisnik označio "uvek dozvoli" za trenutnu sesiju. */
+  /** Tools the user marked "always allow" for the current session. */
   alwaysApprovedTools: Set<string>;
   session: Session;
   messages: ChatMessage[];

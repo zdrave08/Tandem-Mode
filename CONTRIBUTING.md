@@ -36,6 +36,9 @@ to run anything that actually calls the model.
 - **Safety.** Nothing that mutates files, runs shell commands, or otherwise
   changes state should ever happen silently. If you add a tool, give it a
   correct `isDestructive()` — when in doubt, treat it as destructive.
+- **Code comments are in English only.** That covers `//`, `/* */` and `/** */`
+  comments under `src/`. Explain the *why*, not the what. The Serbian UI strings
+  in `src/i18n/sr.ts` and the Serbian docs stay as they are.
 - **Small PRs.** One thing at a time is easier to review than a redesign.
 
 ## Where things live

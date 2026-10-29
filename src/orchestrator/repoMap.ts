@@ -40,7 +40,7 @@ async function listViaFs(cwd: string): Promise<string[]> {
   return results;
 }
 
-/** Bajt-za-bajt stabilan string dok se ne promeni sadržaj repoa — deo je fiksnog prefiksa za worker pozive. */
+/** A byte-for-byte stable string until the repo content changes; part of the fixed prefix for worker calls. */
 export async function buildRepoMap(cwd: string): Promise<string> {
   const files = (await listViaGit(cwd)) ?? (await listViaFs(cwd));
   const truncated = files.length > MAX_FILES;

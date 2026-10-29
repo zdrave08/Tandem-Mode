@@ -63,7 +63,7 @@ export async function* streamChatCompletion(
       messages: params.messages.map(toWireMessage),
       tools: params.tools,
       stream: true,
-      // Bez ovoga usage stiže kao null u svakom chunk-u.
+      // Without this, usage arrives as null in every chunk.
       stream_options: { include_usage: true },
       thinking: params.thinking
         ? { type: "enabled", reasoning_effort: params.thinking.reasoningEffort }
@@ -124,7 +124,7 @@ export async function* streamChatCompletion(
   }
 }
 
-/** Non-streaming poziv za planner/reviewer — bez tools, samo tekst/JSON + usage odjednom. */
+/** Non-streaming call for planner/reviewer: no tools, just text/JSON + usage all at once. */
 export async function chatCompletionOnce(
   env: TandemEnv,
   params: Omit<ChatCompletionParams, "tools">

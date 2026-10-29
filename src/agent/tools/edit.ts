@@ -29,7 +29,7 @@ export const editTool: ToolDefinition = {
     },
     required: ["path", "oldString", "newString"],
   },
-  // Uvek menja fajl na disku.
+  // Always modifies a file on disk.
   isDestructive: () => true,
   async execute(args, ctx) {
     const filePath = String(args["path"] ?? "");

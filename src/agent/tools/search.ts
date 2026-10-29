@@ -42,7 +42,7 @@ export const searchTool: ToolDefinition = {
           isError: true,
         };
       }
-      // rg vraća exit code 1 kad nema poklapanja — to nije greška alata.
+      // rg exits with code 1 when there are no matches. That is not a tool error.
       if (e.code === 1) {
         return { output: "(no matches)", isError: false };
       }

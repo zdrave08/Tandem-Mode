@@ -13,9 +13,9 @@ export interface BenchmarkTask {
   id: string;
   description: string;
   expectedFiles: string[];
-  /** Uvodi poznat bag u čist baseline pre nego što agent počne. */
+  /** Introduces a known bug into a clean baseline before the agent starts. */
   injectBug: (repoPath: string) => Promise<void>;
-  /** Apsolutna putanja do verify PHP skripte — VAN target repoa. */
+  /** Absolute path to the verify PHP script, OUTSIDE the target repo. */
   verifyScript: string;
 }
 

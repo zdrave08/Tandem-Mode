@@ -17,8 +17,8 @@ export const webSearchTool: ToolDefinition = {
     const query = String(args["query"] ?? "");
     try {
       const { text, usage } = await runWebSearch(ctx.env, query, ctx.signal);
-      // Responses API nema objavljen zaseban cenovnik — trošak se prijavljuje
-      // po Flash tarifi kao najbolja dostupna procena (stvarni tokeni su tačni).
+      // The Responses API has no separate published price list; the cost is reported at
+      // the Flash rate as the best available estimate (the actual token counts are exact).
       ctx.usage.add("deepseek-v4-flash", usage);
       return { output: text, isError: false };
     } catch (err) {

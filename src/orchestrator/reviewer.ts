@@ -28,7 +28,7 @@ export interface VerifyResult {
 }
 
 function formatVerify(verify: VerifyResult): string {
-  // Greške build/test alata su obično na kraju izlaza, pa čuvamo rep, ne glavu.
+  // Build/test errors are usually at the end of the output, so keep the tail, not the head.
   const out = verify.output.length > MAX_VERIFY_CHARS ? "...(truncated)\n" + verify.output.slice(-MAX_VERIFY_CHARS) : verify.output;
   return `\n\nCheck result (${verify.command}), exit code ${verify.exitCode ?? "n/a (not run)"}:\n${out || "(no output)"}`;
 }

@@ -6,26 +6,26 @@ const SERVICE_NAME = "TandemMode";
 const ACCOUNT_NAME = os.userInfo().username;
 
 const CRED_PATH = path.join(os.homedir(), "AppData", "Local", "TandemMode", "credentials.dat");
-// Nije tajna — samo dodatni ulaz pomešan sa DPAPI ključem vezanim za OS nalog,
-// koji je stvarna zaštita.
+// Not a secret: just an extra input mixed into the DPAPI key tied to the OS account,
+// which is the actual protection.
 const ENTROPY = "tandem-mode-v1";
 
 /**
- * Windows: DPAPI-šifrovan fajl umesto punog Windows Credential Manager-a — isti
- * mehanizam (samo ovaj OS nalog može dešifrovati), ali direktan .NET poziv
- * bez multi-platform auto-detekcije.
- * macOS: Keychain preko ugrađenog `security` CLI-ja.
- * Linux: Secret Service (gnome-keyring/kwallet) preko `secret-tool` (libsecret).
+ * Windows: a DPAPI-encrypted file instead of the full Windows Credential Manager: the same
+ * mechanism (only this OS account can decrypt), but a direct .NET call
+ * without multi-platform auto-detection.
+ * macOS: Keychain via the built-in `security` CLI.
+ * Linux: Secret Service (gnome-keyring/kwallet) via `secret-tool` (libsecret).
  *
- * `cross-keychain` je probana prva (M2) i odbačena: 15-18s po pozivu na
- * ovoj mašini čak i sa native bindingom, jer njena detekcija backend-a
- * proba sve platforme redom — otud direktni pozivi po platformi ovde.
+ * `cross-keychain` was tried first (M2) and dropped: 15-18s per call on this
+ * machine even with the native binding, because its backend detection tries
+ * every platform in turn, hence the direct per-platform calls here.
  *
- * Ključ se na Windows-u i Linux-u prosleđuje ISKLJUČIVO kroz stdin, nikad
- * kroz argumente komande — argumenti su vidljivi u listi procesa dok proces
- * traje. `security` na macOS-u nema stdin-varijantu za `-w`, pa ključ tu
- * kratkotrajno prolazi kroz argv; poznat i prihvaćen kompromis (isto važi
- * za većinu CLI alata koji wrap-uju Keychain).
+ * On Windows and Linux the key is passed EXCLUSIVELY through stdin, never through
+ * command arguments, which are visible in the process list while the process
+ * runs. `security` on macOS has no stdin variant for `-w`, so the key briefly goes
+ * through argv there; a known and accepted trade-off (the same applies to
+ * most CLI tools that wrap Keychain).
  */
 function run(cmd: string, args: string[], stdin?: string): Promise<{ stdout: string; code: number | null }> {
   return new Promise((resolve, reject) => {
@@ -131,7 +131,7 @@ async function deleteStoredApiKeyMac(): Promise<void> {
   try {
     await run("security", ["delete-generic-password", "-a", ACCOUNT_NAME, "-s", SERVICE_NAME]);
   } catch {
-    // ništa nije bilo sačuvano — u redu je
+    // nothing was stored: that is fine
   }
 }
 
@@ -156,7 +156,7 @@ async function deleteStoredApiKeyLinux(): Promise<void> {
   try {
     await run("secret-tool", ["clear", "service", SERVICE_NAME, "account", ACCOUNT_NAME]);
   } catch {
-    // ništa nije bilo sačuvano — u redu je
+    // nothing was stored: that is fine
   }
 }
 

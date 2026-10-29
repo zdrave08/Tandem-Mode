@@ -6,7 +6,7 @@ export interface TandemEnv {
   baseUrl: string;
 }
 
-/** DEEPSEEK_API_KEY (env) ima prednost nad OS credential store-om — za CI/automatizaciju. */
+/** DEEPSEEK_API_KEY (env) takes priority over the OS credential store, for CI/automation. */
 export async function resolveApiKey(): Promise<string | null> {
   const envKey = process.env["DEEPSEEK_API_KEY"];
   if (envKey) return envKey;

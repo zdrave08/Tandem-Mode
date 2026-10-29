@@ -1,6 +1,6 @@
 /**
- * Cene per 1M tokena (avgust 2026) — proveriti periodično protiv zvanične
- * cenovne stranice, jer nema price-check endpointa u samom API-ju.
+ * Prices per 1M tokens (August 2026). Check periodically against the official
+ * pricing page, since the API itself has no price-check endpoint.
  */
 export interface ModelPricing {
   inputPerMillion: number;

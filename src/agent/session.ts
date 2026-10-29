@@ -25,8 +25,8 @@ export async function appendSessionMessage(session: Session, message: ChatMessag
   try {
     await appendFile(session.filePath, line, "utf8");
   } catch (err) {
-    // Fajl/direktorijum je nestao ispod nas (npr. agent ga je obrisao kao
-    // "nepotreban") — rekreiraj i pokušaj jednom, umesto da srušiš petlju.
+    // The file/directory vanished from under us (e.g. the agent deleted it as
+    // "unnecessary"): recreate it and retry once instead of crashing the loop.
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     await mkdir(path.dirname(session.filePath), { recursive: true });
     await appendFile(session.filePath, line, "utf8");

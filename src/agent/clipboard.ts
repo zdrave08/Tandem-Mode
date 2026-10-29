@@ -23,11 +23,11 @@ if ([System.Windows.Forms.Clipboard]::ContainsImage()) {
 }
 
 /**
- * Ne postoji ugrađen Node/OS API za sliku sa clipboard-a na macOS-u, ali
- * AppleScript ume da upiše sirove podatke sa clipboard-a direktno u fajl —
- * bez trećih alata (pngpaste i sl.). Aplikacije obično stave PNG na
- * clipboard; screenshot alati i neki editori stave TIFF, pa se u tom
- * slučaju konvertuje u PNG preko `sips` (takođe ugrađen u macOS).
+ * There is no built-in Node/OS API for reading an image from the clipboard on macOS, but
+ * AppleScript can write the raw clipboard data straight to a file, so no third-party
+ * tool (pngpaste and the like) is needed. Apps usually put PNG on the clipboard;
+ * screenshot tools and some editors put TIFF, which is then converted to PNG with
+ * `sips` (also built into macOS).
  */
 async function saveClipboardImageMac(destPath: string): Promise<boolean> {
   const escapedDest = destPath.replace(/"/g, '\\"');
@@ -66,7 +66,7 @@ end try`;
 
 type BinaryResult = { kind: "data"; buf: Buffer } | { kind: "empty" } | { kind: "not-found" };
 
-/** Čita binarni stdout komande; razlikuje "komanda ne postoji" od "nema šta da vrati". */
+/** Reads a command's binary stdout; tells "command does not exist" apart from "nothing to return". */
 function readBinaryStdout(cmd: string, args: string[]): Promise<BinaryResult> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args);
@@ -83,9 +83,9 @@ function readBinaryStdout(cmd: string, args: string[]): Promise<BinaryResult> {
 }
 
 /**
- * Linux nema jedinstven clipboard API — bira se alat prema session tipu:
- * `wl-paste` (wl-clipboard) na Wayland-u, `xclip` na X11. Nijedan nije
- * garantovano instaliran; jasna greška upućuje korisnika koji paket da doda.
+ * Linux has no single clipboard API, so the tool is chosen by session type:
+ * `wl-paste` (wl-clipboard) on Wayland, `xclip` on X11. Neither is guaranteed to be
+ * installed; a clear error tells the user which package to add.
  */
 async function saveClipboardImageLinux(destPath: string): Promise<boolean> {
   const isWayland = Boolean(process.env["WAYLAND_DISPLAY"]);

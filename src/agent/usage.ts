@@ -7,7 +7,7 @@ interface UsageEntry {
   isPeak: boolean;
 }
 
-/** Isključivo iz API `usage` polja — nikad procena tokena na klijentu. */
+/** Strictly from the API `usage` field; never a client-side token estimate. */
 export class UsageAccumulator {
   private entries: UsageEntry[] = [];
 
@@ -44,7 +44,7 @@ export class UsageAccumulator {
     return this.entries.reduce((sum, e) => sum + estimateCallCost(e.model, e.usage, e.isPeak), 0);
   }
 
-  /** Koliko bi ova sesija koštala da je svaki poziv pao u off-peak prozor. */
+  /** What this session would have cost had every call fallen into the off-peak window. */
   offPeakEquivalentCostUsd(): number {
     return this.entries.reduce((sum, e) => sum + estimateCallCost(e.model, e.usage, false), 0);
   }

@@ -8,7 +8,7 @@ export interface TandemConfig {
   maxIterations?: number;
   /** Continue automatically at the iteration limit instead of asking. Only honored when a budget is set. */
   autoContinue?: boolean;
-  /** Shell komanda (build/test) koju orkestracija pokreće pre svakog review-a; izlaz ide reviewer-u. */
+  /** Shell command (build/test) that orchestration runs before every review; its output goes to the reviewer. */
   verifyCommand?: string;
   /** Shell command run when a /plan run ends (approved, max review loops, or error); details come as TANDEM_* env vars. */
   notifyCommand?: string;

@@ -21,22 +21,22 @@ export type AgentEvent =
 export interface AgentLoopOptions {
   env: TandemEnv;
   model: "deepseek-v4-pro" | "deepseek-v4-flash";
-  /** `undefined` = thinking mode isključen za ovaj poziv. */
+  /** `undefined` = thinking mode is off for this call. */
   thinking?: ThinkingConfig;
   cwd: string;
   session: Session;
   usage: UsageAccumulator;
   maxIterations?: number;
   /**
-   * Pozvano kad se dostigne granica iteracija. `true` = nastavi za još `maxIterations` poziva,
-   * `false` (ili bez ovog callback-a) = stani sa `max_iterations_reached`.
+   * Called when the iteration limit is reached. `true` = continue for another `maxIterations` calls,
+   * `false` (or no callback) = stop with `max_iterations_reached`.
    */
   onIterationLimit?: (info: { iterations: number }) => Promise<boolean>;
-  /** Prekida PRE sledećeg poziva ako je akumulirana cena >= ovome. */
+  /** Stops BEFORE the next call if the accumulated cost is >= this. */
   budgetUsd?: number;
-  /** ESC u REPL-u — prekida trenutni API poziv/alat, čuva parcijalan rezultat. */
+  /** ESC in the REPL: aborts the current API call/tool and keeps the partial result. */
   signal?: AbortSignal;
-  /** Pozvano pre svake destruktivne akcije. */
+  /** Called before every destructive action. */
   approve: (toolName: string, args: Record<string, unknown>) => Promise<boolean>;
 }
 
@@ -44,16 +44,17 @@ function isAbortError(err: unknown): boolean {
   return err instanceof Error && err.name === "AbortError";
 }
 
-// Reasoning modeli (posebno reasoningEffort: "max") mogu ući u dugu petlju
-// razmišljanja i generisati stotine hiljada tokena pre finalnog odgovora.
-// Bez ovog kapa `reasoning += ev.delta` raste neograničeno po tokenu i
-// blokira heap čak i na malim projektima, nezavisno od izlaza alata.
+// Reasoning models (especially reasoningEffort: "max") can fall into a long thinking
+// loop and generate hundreds of thousands of tokens before the final answer.
+// Without this cap `reasoning += ev.delta` grows without bound, token by token, and
+// exhausts the heap even on small projects, regardless of tool output.
 const MAX_REASONING_CHARS = 200_000;
 
 /**
- * `messages` mora već sadržati system + početni user zahtev (i istoriju ako
- * se nastavlja sesija) — pozivalac je odgovoran da TE poruke upiše u sesiju
- * pre poziva. Petlja perzistuje samo poruke koje sama generiše (assistant/tool).
+ * `messages` must already contain the system message + the initial user request (and the
+ * history when a session is resumed); the caller is responsible for writing THOSE messages
+ * to the session before calling. The loop persists only the messages it generates itself
+ * (assistant/tool).
  */
 export async function* runAgentLoop(
   messages: ChatMessage[],
@@ -61,7 +62,7 @@ export async function* runAgentLoop(
 ): AsyncGenerator<AgentEvent> {
   const ctx: ToolContext = { cwd: opts.cwd, env: opts.env, usage: opts.usage, ...(opts.signal ? { signal: opts.signal } : {}) };
   const maxIterations = opts.maxIterations ?? 25;
-  // Granica se pomera za još jedan "komad" svaki put kad korisnik (ili autoContinue) dozvoli nastavak.
+  // The limit moves by another "chunk" each time the user (or autoContinue) allows continuing.
   let limit = maxIterations;
 
   for (let iteration = 0; ; iteration++) {
@@ -130,8 +131,8 @@ export async function* runAgentLoop(
       }
     } catch (err) {
       if (!isAbortError(err)) throw err;
-      // Prekinuto usred streama — sačuvaj šta god je stiglo do sad kao poruku,
-      // ali bez tool_calls (nepotpuni argumenti se ne mogu pouzdano izvršiti).
+      // Aborted mid-stream: keep whatever has arrived so far as a message, but without
+      // tool_calls (incomplete arguments cannot be executed reliably).
       if (content || reasoning) {
         const partialMessage: ChatMessage = {
           role: "assistant",
@@ -153,9 +154,9 @@ export async function* runAgentLoop(
         function: { name: v.name ?? "", arguments: v.args },
       }));
 
-    // `tools` se šalje na SVAKI poziv u ovoj petlji, pa dokumentacija traži
-    // da se reasoning_content svakog prethodnog poteza vrati — ne samo onih
-    // koji su zvali alat (inače dokumentovano 400, videti docs/api-notes.md #2).
+    // `tools` is sent on EVERY call in this loop, so the docs require returning the
+    // reasoning_content of every previous turn, not only the ones that called a tool
+    // (otherwise a documented 400, see docs/api-notes.md #2).
     const assistantMessage: ChatMessage = {
       role: "assistant",
       content: content || null,
@@ -181,7 +182,7 @@ export async function* runAgentLoop(
       try {
         args = JSON.parse(call.function.arguments || "{}") as Record<string, unknown>;
       } catch {
-        // Ostaje {} — alat će prijaviti nedostajuće/neispravne argumente.
+        // Stays {}: the tool will report missing/invalid arguments.
       }
 
       const tool = findTool(call.function.name);

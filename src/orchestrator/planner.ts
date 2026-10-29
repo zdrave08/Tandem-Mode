@@ -53,8 +53,8 @@ export async function runPlanner(
     return { plan: parsed, usage: result.usage };
   }
 
-  // Poznato ponašanje: json_object mod povremeno vrati prazan/nevalidan
-  // sadržaj (verovatno prolazna API nestabilnost, ne dosledna greška —
-  // videti docs/api-notes.md). Jedan retry pokriva to bez rušenja pozivaoca.
+  // Known behavior: json_object mode occasionally returns empty/invalid
+  // content (probably transient API flakiness, not a consistent error;
+  // see docs/api-notes.md). One retry covers it without crashing the caller.
   throw lastError ?? new Error("Planner failed after multiple attempts.");
 }

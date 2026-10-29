@@ -24,7 +24,7 @@ import type { ChatMessage, ThinkingConfig } from "./deepseek/types.js";
 import { formatToolCall, formatToolResult, type DiffLine } from "./ui/toolFormat.js";
 import { formatStatusLine } from "./ui/status.js";
 
-/** Pseudo-alat kojim se kroz isti y/n/a mehanizam pita "nastaviti posle granice iteracija?". */
+/** Pseudo-tool used to ask "continue after the iteration limit?" through the same y/n/a mechanism. */
 const CONTINUE_TOOL = "__continue__";
 
 function approvalText(toolName: string, args: Record<string, unknown>): string {
@@ -57,9 +57,9 @@ export interface TurnConfig {
   signal?: AbortSignal;
 }
 
-// Prikazuje se samo zadnjih N karaktera dok model razmišlja — dovoljno za
-// "Thinking…" preview, a sprečava da Ink na svaki token re-renderuje/re-lejautuje
-// celu (potencijalno ogromnu) rastuću stringu, što je O(n²) trošak i može oboriti heap.
+// Only the last N characters are shown while the model is thinking: enough for the
+// "Thinking…" preview, and it stops Ink from re-rendering/re-laying-out the whole
+// (potentially huge) growing string on every token, which is an O(n²) cost and can exhaust the heap.
 const REASONING_DISPLAY_CAP = 4_000;
 
 interface ToolLogEntry {
@@ -117,7 +117,7 @@ function TurnView({
         maxIterations: state.maxIterations,
         onIterationLimit: async ({ iterations }) => {
           const chunk = state.maxIterations;
-          // Automatski nastavak samo uz budžet — budžet tvrdo zaustavlja petlju pre sledećeg poziva.
+          // Auto-continue only with a budget: the budget hard-stops the loop before the next call.
           if (state.autoContinue && turn.budgetUsd !== undefined) {
             setNotice(
               t("autoContinued", {
@@ -129,7 +129,7 @@ function TurnView({
             return true;
           }
           if (state.alwaysApprovedTools.has(CONTINUE_TOOL)) return true;
-          // --yes znači "bez pitanja" (skripte/CI): nema ko da odgovori, pa ne čekamo na stdin.
+          // --yes means "no questions" (scripts/CI): nobody can answer, so do not wait on stdin.
           if (state.autoApprove) {
             setNotice(t("continueStopped"));
             return false;
@@ -406,7 +406,7 @@ function parseApprovalAnswer(raw: string): ApprovalResponse {
   return { approved: lower === "y", always: false };
 }
 
-/** Za single-shot poteze: sopstveni for-await čitač linija samo za y/n/a odobrenja. */
+/** For single-shot turns: its own for-await line reader, only for y/n/a approvals. */
 function createLineApprover(): { approve: Approver; close: () => void } {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const resolveRef: { current: ((response: ApprovalResponse) => void) | null } = { current: null };
@@ -432,10 +432,10 @@ function createLineApprover(): { approve: Approver; close: () => void } {
 }
 
 /**
- * `.question()` je nepouzdan na piped/non-TTY stdin-u posle prvog poziva
- * (poznata Node quirka — drugi poziv nikad ne razrešava). Zato se čitanje
- * linija radi isključivo preko `for await...of rl`, koje pouzdano isporučuje
- * svaku liniju, uz ručni state-machine za odobrenje umesto ugnježdenog
+ * `.question()` is unreliable on piped/non-TTY stdin after the first call
+ * (a known Node quirk: the second call never resolves). So lines are read
+ * exclusively through `for await...of rl`, which delivers every line reliably,
+ * with a manual state machine for approvals instead of a nested
  * `.question()`.
  */
 async function runRepl(state: RuntimeState): Promise<void> {
@@ -465,8 +465,8 @@ async function runRepl(state: RuntimeState): Promise<void> {
     });
   };
 
-  // ESC prekida trenutni potez. Radi samo na pravom TTY-ju — piped/scriptovani
-  // unos ne generiše keypress evente, pa je interrupt tiho no-op tamo.
+  // ESC interrupts the current turn. Works only on a real TTY: piped/scripted
+  // input generates no keypress events, so the interrupt is a silent no-op there.
   const abortRef: { current: AbortController | null } = { current: null };
   readline.emitKeypressEvents(process.stdin);
   process.stdin.on("keypress", (_str, key: { name?: string } | undefined) => {

@@ -25,8 +25,8 @@ export const viewImageTool: ToolDefinition = {
 
     try {
       const { text, usage } = await describeImage(ctx.env, resolved, question, ctx.signal);
-      // vision-exp nema objavljen poseban cenovnik — trošak se prijavljuje
-      // po Flash tarifi kao najbolja dostupna procena (stvarni tokeni su tačni).
+      // vision-exp has no published price list; the cost is reported at the Flash
+      // rate as the best available estimate (the actual token counts are exact).
       ctx.usage.add("deepseek-v4-flash", usage);
       return { output: text, isError: false };
     } catch (err) {

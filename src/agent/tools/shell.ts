@@ -5,9 +5,9 @@ const MAX_OUTPUT_CHARS = 20_000;
 const HARD_MAX_BUFFER_CHARS = 5_000_000;
 const TIMEOUT_MS = 120_000;
 
-// Konzervativna bela lista — read-only komande koje ne traže odobrenje.
-// Sve što ne poklopi ovde se tretira kao destruktivno; bolje suvišno
-// pitati nego tiho izvršiti nešto nepovratno.
+// Conservative allowlist: read-only commands that do not need approval.
+// Anything that does not match here is treated as destructive; better to ask
+// needlessly than to silently run something irreversible.
 const SAFE_COMMAND_PATTERNS: RegExp[] = [
   /^git\s+(status|log|diff|show|branch|remote(\s+-v)?)\b/i,
   /^(ls|dir)\b/i,

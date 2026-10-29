@@ -1,12 +1,12 @@
 export interface StatusInput {
   model: string;
-  /** Već prevedena oznaka režima ("chat" / "plan"). */
+  /** Already translated mode label ("chat" / "plan"). */
   mode: string;
   costUsd: number;
   budgetUsd?: number;
-  /** Trenutni poziv modela u ovom potezu i trenutna granica; nepoznato pre prvog poziva. */
+  /** The current model call in this turn and the current limit; unknown before the first call. */
   call?: { n: number; max: number };
-  /** Prevedena oznaka poziva, npr. "call 12/25" — gradi je pozivalac (i18n). */
+  /** Translated call label, e.g. "call 12/25"; built by the caller (i18n). */
   callLabel?: string;
 }
 
@@ -17,7 +17,7 @@ export interface StatusLine {
   level: StatusLevel;
 }
 
-/** Skraćuje "deepseek-v4-pro" na "v4-pro" da linija stane u uski terminal. */
+/** Shortens "deepseek-v4-pro" to "v4-pro" so the line fits a narrow terminal. */
 export function shortModel(model: string): string {
   return model.replace(/^deepseek-/, "");
 }
