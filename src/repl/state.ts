@@ -11,6 +11,12 @@ export interface RuntimeState {
   reasoningEffort: "low" | "high" | "max";
   budgetUsd?: number;
   maxReviewLoops: number;
+  /** Poziva modela po "komadu" jednog poteza; na granici se pita za nastavak. */
+  maxIterations: number;
+  /** Nastavi bez pitanja na granici iteracija (važi samo kad je postavljen budžet). */
+  autoContinue: boolean;
+  /** Šta trenutno radi — za statusnu liniju. */
+  activeMode: "chat" | "plan";
   verifyCommand?: string;
   notifyCommand?: string;
   autoApprove: boolean;

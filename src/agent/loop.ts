@@ -13,6 +13,7 @@ export type AgentEvent =
   | { type: "tool_call_denied"; id: string; name: string }
   | { type: "usage"; usage: UsageInfo }
   | { type: "final"; content: string }
+  | { type: "iteration"; n: number; max: number }
   | { type: "max_iterations_reached" }
   | { type: "budget_exceeded"; spentUsd: number; budgetUsd: number }
   | { type: "interrupted" };
@@ -26,6 +27,11 @@ export interface AgentLoopOptions {
   session: Session;
   usage: UsageAccumulator;
   maxIterations?: number;
+  /**
+   * Pozvano kad se dostigne granica iteracija. `true` = nastavi za još `maxIterations` poziva,
+   * `false` (ili bez ovog callback-a) = stani sa `max_iterations_reached`.
+   */
+  onIterationLimit?: (info: { iterations: number }) => Promise<boolean>;
   /** Prekida PRE sledećeg poziva ako je akumulirana cena >= ovome. */
   budgetUsd?: number;
   /** ESC u REPL-u — prekida trenutni API poziv/alat, čuva parcijalan rezultat. */
@@ -55,8 +61,19 @@ export async function* runAgentLoop(
 ): AsyncGenerator<AgentEvent> {
   const ctx: ToolContext = { cwd: opts.cwd, env: opts.env, usage: opts.usage, ...(opts.signal ? { signal: opts.signal } : {}) };
   const maxIterations = opts.maxIterations ?? 25;
+  // Granica se pomera za još jedan "komad" svaki put kad korisnik (ili autoContinue) dozvoli nastavak.
+  let limit = maxIterations;
 
-  for (let iteration = 0; iteration < maxIterations; iteration++) {
+  for (let iteration = 0; ; iteration++) {
+    if (iteration >= limit) {
+      const proceed = opts.onIterationLimit ? await opts.onIterationLimit({ iterations: iteration }) : false;
+      if (!proceed) {
+        yield { type: "max_iterations_reached" };
+        return;
+      }
+      limit += maxIterations;
+    }
+
     if (opts.signal?.aborted) {
       yield { type: "interrupted" };
       return;
@@ -69,6 +86,8 @@ export async function* runAgentLoop(
         return;
       }
     }
+
+    yield { type: "iteration", n: iteration + 1, max: limit };
 
     let reasoning = "";
     let content = "";
@@ -208,6 +227,4 @@ export async function* runAgentLoop(
       await appendSessionMessage(opts.session, toolMsg);
     }
   }
-
-  yield { type: "max_iterations_reached" };
 }

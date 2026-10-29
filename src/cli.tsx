@@ -21,6 +21,26 @@ import { notifyCompletion } from "./orchestrator/notify.js";
 import { appendSessionMessage, createSession, findLatestSession, loadSessionMessages } from "./agent/session.js";
 import type { RuntimeState } from "./repl/state.js";
 import type { ChatMessage, ThinkingConfig } from "./deepseek/types.js";
+import { formatToolCall, formatToolResult, type DiffLine } from "./ui/toolFormat.js";
+import { formatStatusLine } from "./ui/status.js";
+
+/** Pseudo-alat kojim se kroz isti y/n/a mehanizam pita "nastaviti posle granice iteracija?". */
+const CONTINUE_TOOL = "__continue__";
+
+function approvalText(toolName: string, args: Record<string, unknown>): string {
+  if (toolName === CONTINUE_TOOL) {
+    return t("continuePrompt", { chunk: Number(args["chunk"] ?? 0) });
+  }
+  return t("approvalPrompt", { call: `${toolName}(${JSON.stringify(args)})` });
+}
+
+function diffColor(kind: DiffLine["kind"]): "red" | "green" | undefined {
+  return kind === "removed" ? "red" : kind === "added" ? "green" : undefined;
+}
+
+function diffPrefix(kind: DiffLine["kind"]): string {
+  return kind === "removed" ? "- " : kind === "added" ? "+ " : "  ";
+}
 
 interface ApprovalResponse {
   approved: boolean;
@@ -70,6 +90,7 @@ function TurnView({
   const [usageLine, setUsageLine] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [iter, setIter] = useState<{ n: number; max: number } | null>(null);
 
   useEffect(() => {
     async function run(): Promise<void> {
@@ -93,6 +114,32 @@ function TurnView({
         session: state.session,
         usage: state.usage,
         approve,
+        maxIterations: state.maxIterations,
+        onIterationLimit: async ({ iterations }) => {
+          const chunk = state.maxIterations;
+          // Automatski nastavak samo uz budžet — budžet tvrdo zaustavlja petlju pre sledećeg poziva.
+          if (state.autoContinue && turn.budgetUsd !== undefined) {
+            setNotice(
+              t("autoContinued", {
+                n: iterations,
+                spent: `$${state.usage.estimatedCostUsd().toFixed(4)}`,
+                budget: `$${turn.budgetUsd.toFixed(2)}`,
+              })
+            );
+            return true;
+          }
+          if (state.alwaysApprovedTools.has(CONTINUE_TOOL)) return true;
+          // --yes znači "bez pitanja" (skripte/CI): nema ko da odgovori, pa ne čekamo na stdin.
+          if (state.autoApprove) {
+            setNotice(t("continueStopped"));
+            return false;
+          }
+          setPending({ toolName: CONTINUE_TOOL, args: { iterations, chunk } });
+          const response = await askApproval(CONTINUE_TOOL, { iterations, chunk });
+          setPending(null);
+          if (response.always && response.approved) state.alwaysApprovedTools.add(CONTINUE_TOOL);
+          return response.approved;
+        },
         ...(turn.thinking !== undefined ? { thinking: turn.thinking } : {}),
         ...(turn.budgetUsd !== undefined ? { budgetUsd: turn.budgetUsd } : {}),
         ...(turn.signal !== undefined ? { signal: turn.signal } : {}),
@@ -134,8 +181,11 @@ function TurnView({
           case "final":
             setContent(event.content);
             break;
+          case "iteration":
+            setIter({ n: event.n, max: event.max });
+            break;
           case "max_iterations_reached":
-            setNotice(t("maxIterations"));
+            setNotice((prev) => prev ?? t("maxIterations"));
             break;
           case "budget_exceeded":
             setNotice(
@@ -173,24 +223,52 @@ function TurnView({
         const lines = entry.output?.split("\n") ?? [];
         const preview = lines.slice(0, 3).join("\n");
         const more = lines.length > 3;
+        const call = formatToolCall(entry.name, entry.args);
+        const summary = entry.output !== undefined ? formatToolResult(entry.name, entry.output, entry.isError === true).summary : undefined;
         return (
           <Box key={entry.id} flexDirection="column">
             <Text color={entry.status === "denied" ? "yellow" : entry.isError ? "red" : "cyan"}>
-              ⏺ {entry.name}({JSON.stringify(entry.args)})
+              ⏺ {call.title}
               {entry.status === "running" ? "…" : entry.status === "denied" ? t("toolDenied") : ""}
             </Text>
-            {preview && (
+            {call.diff?.map((line, i) => {
+              const color = diffColor(line.kind);
+              return (
+                <Text key={i} {...(color ? { color } : { dimColor: true })}>
+                  {"  "}
+                  {diffPrefix(line.kind)}
+                  {line.text}
+                </Text>
+              );
+            })}
+            {summary ? (
               <Text dimColor>
                 {"  ⎿  "}
-                {preview.slice(0, 400)}
-                {more || preview.length > 400 ? t("toolMoreLines", { count: lines.length }) : ""}
+                {summary}
               </Text>
+            ) : (
+              preview && (
+                <Text dimColor {...(entry.isError ? { color: "red" } : {})}>
+                  {"  ⎿  "}
+                  {preview.slice(0, 400)}
+                  {more || preview.length > 400 ? t("toolMoreLines", { count: lines.length }) : ""}
+                </Text>
+              )
             )}
           </Box>
         );
       })}
 
-      {pending && (
+      {pending && pending.toolName === CONTINUE_TOOL && (
+        <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
+          <Text color="yellow" bold>
+            {t("continueAsk", { n: Number(pending.args["iterations"] ?? 0) })}
+          </Text>
+          <Text dimColor>{t("continueHint", { chunk: Number(pending.args["chunk"] ?? 0) })}</Text>
+        </Box>
+      )}
+
+      {pending && pending.toolName !== CONTINUE_TOOL && (
         <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
           <Text color="yellow" bold>
             {t("destructiveAction", { call: `${pending.toolName}(${JSON.stringify(pending.args)})` })}
@@ -204,8 +282,30 @@ function TurnView({
       {usageLine && <Text color="gray">{usageLine}</Text>}
       {notice && <Text color="yellow">{notice}</Text>}
       {error && <Text color="red">{t("errorPrefix", { message: error })}</Text>}
+
+      <StatusBar state={state} turn={turn} iter={iter} />
     </Box>
   );
+}
+
+function StatusBar({
+  state,
+  turn,
+  iter,
+}: {
+  state: RuntimeState;
+  turn: TurnConfig;
+  iter: { n: number; max: number } | null;
+}) {
+  const status = formatStatusLine({
+    model: turn.model,
+    mode: t(`statusMode_${state.activeMode}`),
+    costUsd: state.usage.estimatedCostUsd(),
+    ...(turn.budgetUsd !== undefined ? { budgetUsd: turn.budgetUsd } : {}),
+    ...(iter ? { call: iter, callLabel: t("statusCalls", { n: iter.n, max: iter.max }) } : {}),
+  });
+  const color = status.level === "danger" ? "red" : status.level === "warn" ? "yellow" : "gray";
+  return <Text color={color}>{`▌ ${status.text}`}</Text>;
 }
 
 function truncatePath(p: string, max = 50): string {
@@ -245,6 +345,7 @@ async function runTurn(
   askApproval: Approver,
   signal?: AbortSignal
 ): Promise<void> {
+  state.activeMode = "chat";
   const userMsg: ChatMessage = { role: "user", content: userText };
   state.messages.push(userMsg);
   await appendSessionMessage(state.session, userMsg);
@@ -268,6 +369,7 @@ async function runPlanTask(
   askApproval: Approver,
   signal?: AbortSignal
 ): Promise<void> {
+  state.activeMode = "plan";
   try {
     await runOrchestration(task, {
       cwd: state.cwd,
@@ -293,6 +395,8 @@ async function runPlanTask(
         costUsd: state.usage.estimatedCostUsd(),
       });
     }
+  } finally {
+    state.activeMode = "chat";
   }
 }
 
@@ -318,7 +422,7 @@ function createLineApprover(): { approve: Approver; close: () => void } {
   void consumeLines();
 
   const approve: Approver = (toolName, args) => {
-    console.log(`\n${t("approvalPrompt", { call: `${toolName}(${JSON.stringify(args)})` })}`);
+    console.log(`\n${approvalText(toolName, args)}`);
     return new Promise<ApprovalResponse>((resolve) => {
       resolveRef.current = resolve;
     });
@@ -355,7 +459,7 @@ async function runRepl(state: RuntimeState): Promise<void> {
   let lastTurn: Promise<void> = Promise.resolve();
 
   const askApproval: Approver = (toolName, args) => {
-    console.log(`\n${t("approvalPrompt", { call: `${toolName}(${JSON.stringify(args)})` })}`);
+    console.log(`\n${approvalText(toolName, args)}`);
     return new Promise<ApprovalResponse>((resolve) => {
       approvalRef.current = resolve;
     });
@@ -459,6 +563,8 @@ interface ParsedArgv {
   effort?: "low" | "high" | "max";
   budgetUsd?: number;
   maxReviewLoops?: number;
+  maxIterations?: number;
+  autoContinue: boolean;
   language?: Language;
 }
 
@@ -471,6 +577,8 @@ function parseArgv(argv: string[]): ParsedArgv {
   let effort: ParsedArgv["effort"];
   let budgetUsd: number | undefined;
   let maxReviewLoops: number | undefined;
+  let maxIterations: number | undefined;
+  let autoContinue = false;
   let language: Language | undefined;
 
   for (let i = 0; i < argv.length; i++) {
@@ -493,6 +601,11 @@ function parseArgv(argv: string[]): ParsedArgv {
     } else if (arg === "--max-review-loops") {
       const value = Number(argv[++i]);
       if (Number.isFinite(value) && value > 0) maxReviewLoops = value;
+    } else if (arg === "--max-iterations") {
+      const value = Number(argv[++i]);
+      if (Number.isInteger(value) && value > 0) maxIterations = value;
+    } else if (arg === "--auto-continue") {
+      autoContinue = true;
     } else if (arg === "--lang") {
       const value = argv[++i];
       if (value === "en" || value === "sr") language = value;
@@ -501,11 +614,12 @@ function parseArgv(argv: string[]): ParsedArgv {
     }
   }
 
-  const parsed: ParsedArgv = { prompt: rest.join(" ").trim(), resume, autoApprove, plan };
+  const parsed: ParsedArgv = { prompt: rest.join(" ").trim(), resume, autoApprove, plan, autoContinue };
   if (model !== undefined) parsed.model = model;
   if (effort !== undefined) parsed.effort = effort;
   if (budgetUsd !== undefined) parsed.budgetUsd = budgetUsd;
   if (maxReviewLoops !== undefined) parsed.maxReviewLoops = maxReviewLoops;
+  if (maxIterations !== undefined) parsed.maxIterations = maxIterations;
   if (language !== undefined) parsed.language = language;
   return parsed;
 }
@@ -574,6 +688,9 @@ async function main(): Promise<void> {
     thinkingEnabled: true,
     reasoningEffort: parsed.effort ?? config.defaultReasoningEffort ?? DEFAULT_CONFIG.defaultReasoningEffort,
     maxReviewLoops: parsed.maxReviewLoops ?? config.maxReviewLoops ?? DEFAULT_CONFIG.maxReviewLoops,
+    maxIterations: parsed.maxIterations ?? config.maxIterations ?? DEFAULT_CONFIG.maxIterations,
+    autoContinue: parsed.autoContinue || config.autoContinue === true,
+    activeMode: "chat",
     autoApprove: parsed.autoApprove,
     alwaysApprovedTools: new Set(),
     session,
@@ -584,6 +701,9 @@ async function main(): Promise<void> {
   if (config.notifyCommand) state.notifyCommand = config.notifyCommand;
   const budgetUsd = parsed.budgetUsd ?? config.budgetUsd;
   if (budgetUsd !== undefined) state.budgetUsd = budgetUsd;
+  if (state.autoContinue && state.budgetUsd === undefined) {
+    console.error(t("autoContinueNeedsBudget"));
+  }
 
   if (parsed.prompt) {
     const approver = createLineApprover();

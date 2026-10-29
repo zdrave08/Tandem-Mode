@@ -62,6 +62,11 @@ test. Reported as-is, not adjusted to fit expectations.
   the next API call if exceeded, without losing the session. `/usage` also
   shows what the session would have cost off-peak, and the REPL warns you at
   startup if you're currently in a peak-pricing window.
+- **Status line** — the last line of every turn shows model, mode (chat/plan),
+  cost (and budget), and the current call out of the iteration limit; it turns
+  yellow, then red, as you approach the budget or the limit.
+- **Readable tool output** — `edit` shows a red/green diff, `read_file`, `search`
+  and `list_dir` collapse to a one-line summary (`120 lines read`, `no matches`).
 - **ESC to interrupt** — cancels the in-flight call (and any running shell
   command) cleanly, keeping whatever was generated so far.
 - **Cross-platform** — the shell tool runs PowerShell natively on Windows and
@@ -118,6 +123,8 @@ tandem "task" --model deepseek-v4-flash --effort low --budget 0.50 --yes
 | `--effort` | `low`, `high`, or `max` reasoning effort |
 | `--budget` | Hard USD cap for the run |
 | `--max-review-loops` | Cap on orchestration correction cycles (default 3) |
+| `--max-iterations` | Model calls per chunk of a turn (default 25); at the limit the agent asks whether to continue |
+| `--auto-continue` | Continue at the iteration limit without asking — only together with a budget (`--budget`) |
 
 ### REPL commands
 
@@ -175,11 +182,20 @@ in the current directory) > **global** (`~/.tandem/config.json`).
   "defaultReasoningEffort": "high",
   "budgetUsd": 5,
   "maxReviewLoops": 3,
+  "maxIterations": 25,
+  "autoContinue": false,
   "verifyCommand": "pnpm typecheck && pnpm test",
   "notifyCommand": "curl -s -d \"Tandem: $TANDEM_OUTCOME\" https://ntfy.sh/my-topic",
   "language": "en"
 }
 ```
+
+`maxIterations` is how many model calls one turn may make before Tandem stops and
+asks "continue for N more calls? (y/n/a)"; `a` remembers the answer for the rest of
+the session. With `autoContinue` (or `--auto-continue`) it continues on its own, but
+only when a budget is set, because the budget is the hard stop before the next API
+call. In non-interactive runs (`--yes`) without `--auto-continue` it stops instead of
+waiting for an answer, and the session is saved so you can send "continue".
 
 `verifyCommand` runs before each `/plan` review round and its result goes to
 the reviewer. `language` is the UI language (`en` or `sr`, default `en`); the

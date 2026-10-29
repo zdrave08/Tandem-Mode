@@ -72,7 +72,18 @@ export const en = {
   approvalPrompt: "Allow {call}? (y/n/a — a = always allow this tool)",
   autoApproved: "[--yes] auto-approved: {call}",
   errorPrefix: "Error: {message}",
-  maxIterations: "Reached the maximum number of iterations without a final answer.",
+  maxIterations:
+    "Reached the maximum number of iterations without a final answer. The session is saved: send a message (e.g. \"continue\") to pick up where it stopped.",
+  continueAsk: "The agent used {n} calls and has not finished.",
+  continueHint: "y = continue for {chunk} more calls, n = stop, a = always continue in this session (answer below)",
+  continuePrompt: "Continue for {chunk} more calls? (y/n/a — a = always continue this session)",
+  autoContinued: "[auto-continue] {n} calls used, continuing (spent ~{spent} of {budget})",
+  autoContinueNeedsBudget:
+    "autoContinue only works together with a budget (--budget or budgetUsd); without one the agent will ask before continuing.",
+  continueStopped: "Stopped at the iteration limit (non-interactive run). Re-run with --auto-continue and --budget to let it go on.",
+  statusMode_chat: "chat",
+  statusMode_plan: "plan",
+  statusCalls: "call {n}/{max}",
   budgetExceeded:
     "Budget of {budget} reached (spent ~{spent}). The loop stopped before the next call — the session is saved, raise the budget with /budget and continue.",
   interrupted: "⏹ Interrupted (ESC). The session is saved up to this point.",

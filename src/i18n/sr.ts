@@ -72,7 +72,19 @@ export const sr: Record<MessageKey, string> = {
   approvalPrompt: "Dozvoli izvršavanje {call}? (y/n/a — a = uvek dozvoli ovaj alat)",
   autoApproved: "[--yes] auto-odobreno: {call}",
   errorPrefix: "Greška: {message}",
-  maxIterations: "Dostignut je maksimalan broj iteracija bez finalnog odgovora.",
+  maxIterations:
+    "Dostignut je maksimalan broj iteracija bez finalnog odgovora. Sesija je sačuvana: pošalji poruku (npr. \"nastavi\") da nastavi tamo gde je stao.",
+  continueAsk: "Agent je iskoristio {n} poziva i nije završio.",
+  continueHint: "y = nastavi još {chunk} poziva, n = stani, a = uvek nastavi u ovoj sesiji (odgovor ispod)",
+  continuePrompt: "Nastaviti još {chunk} poziva? (y/n/a — a = uvek nastavi u ovoj sesiji)",
+  autoContinued: "[auto-continue] iskorišćeno {n} poziva, nastavljam (potrošeno ~{spent} od {budget})",
+  autoContinueNeedsBudget:
+    "autoContinue radi samo uz budžet (--budget ili budgetUsd); bez njega agent pita pre nastavka.",
+  continueStopped:
+    "Stao na granici iteracija (neinteraktivni rad). Pokreni ponovo sa --auto-continue i --budget da nastavi.",
+  statusMode_chat: "chat",
+  statusMode_plan: "plan",
+  statusCalls: "poziv {n}/{max}",
   budgetExceeded:
     "Budžet od {budget} je dostignut (potrošeno ~{spent}). Petlja je zaustavljena pre sledećeg poziva — sesija je sačuvana, povećaj budžet sa /budget i nastavi.",
   interrupted: "⏹ Prekinuto (ESC). Sesija je sačuvana do ove tačke.",

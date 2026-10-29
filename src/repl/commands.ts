@@ -73,6 +73,7 @@ export async function handleCommand(line: string, state: RuntimeState): Promise<
       console.log(`Thinking: ${state.thinkingEnabled ? `on (${state.reasoningEffort})` : "off"}`);
       console.log(t("statusBudget", { value: state.budgetUsd !== undefined ? `$${state.budgetUsd.toFixed(2)}` : t("statusNotSet") }));
       console.log(`Max review loops: ${state.maxReviewLoops}`);
+      console.log(`Max iterations: ${state.maxIterations}${state.autoContinue ? " (auto-continue)" : ""}`);
       console.log(t("statusVerify", { value: state.verifyCommand ?? t("statusVerifyNone") }));
       console.log(t("statusNotify", { value: state.notifyCommand ?? t("statusVerifyNone") }));
       console.log(t("statusMessages", { count: state.messages.length }));
