@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import React, { useEffect, useState } from "react";
-import { render, Text, Box, useApp } from "ink";
+import { render, Text, Box, useApp, useStdin } from "ink";
 import readline from "node:readline";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,9 +24,8 @@ import type { ChatMessage, ThinkingConfig } from "./deepseek/types.js";
 import { formatToolCall, formatToolResult, type DiffLine } from "./ui/toolFormat.js";
 import { formatStatusLine } from "./ui/status.js";
 import { describeError } from "./deepseek/errors.js";
-
-/** Pseudo-tool used to ask "continue after the iteration limit?" through the same y/n/a mechanism. */
-const CONTINUE_TOOL = "__continue__";
+import { ApprovalMenu } from "./ui/ApprovalMenu.js";
+import { CONTINUE_TOOL } from "./ui/approvalModel.js";
 
 function approvalText(toolName: string, args: Record<string, unknown>): string {
   if (toolName === CONTINUE_TOOL) {
@@ -87,7 +86,14 @@ function TurnView({
   const [reasoning, setReasoning] = useState("");
   const [content, setContent] = useState("");
   const [toolLog, setToolLog] = useState<ToolLogEntry[]>([]);
-  const [pending, setPending] = useState<{ toolName: string; args: Record<string, unknown> } | null>(null);
+  const [pending, setPending] = useState<{
+    toolName: string;
+    args: Record<string, unknown>;
+    /** Set when the boxed menu answers; otherwise `askApproval` (a line reader) does. */
+    resolve?: (response: ApprovalResponse) => void;
+  } | null>(null);
+  // The menu needs raw keyboard input; without a real TTY the old line-based prompt is used.
+  const { isRawModeSupported } = useStdin();
   const [usageLine, setUsageLine] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -95,6 +101,19 @@ function TurnView({
   const [retryNote, setRetryNote] = useState<string | null>(null);
 
   useEffect(() => {
+    /** Shows the approval menu (TTY) or falls back to the line reader, and clears the prompt afterwards. */
+    function askUser(toolName: string, args: Record<string, unknown>): Promise<ApprovalResponse> {
+      const answer = new Promise<ApprovalResponse>((resolve) => {
+        if (isRawModeSupported) {
+          setPending({ toolName, args, resolve });
+        } else {
+          setPending({ toolName, args });
+          void askApproval(toolName, args).then(resolve);
+        }
+      });
+      return answer.finally(() => setPending(null));
+    }
+
     async function run(): Promise<void> {
       const approve = async (toolName: string, args: Record<string, unknown>): Promise<boolean> => {
         if (state.autoApprove) {
@@ -102,9 +121,7 @@ function TurnView({
           return true;
         }
         if (state.alwaysApprovedTools.has(toolName)) return true;
-        setPending({ toolName, args });
-        const response = await askApproval(toolName, args);
-        setPending(null);
+        const response = await askUser(toolName, args);
         if (response.always) state.alwaysApprovedTools.add(toolName);
         return response.approved;
       };
@@ -136,9 +153,7 @@ function TurnView({
             setNotice(t("continueStopped"));
             return false;
           }
-          setPending({ toolName: CONTINUE_TOOL, args: { iterations, chunk } });
-          const response = await askApproval(CONTINUE_TOOL, { iterations, chunk });
-          setPending(null);
+          const response = await askUser(CONTINUE_TOOL, { iterations, chunk });
           if (response.always && response.approved) state.alwaysApprovedTools.add(CONTINUE_TOOL);
           return response.approved;
         },
@@ -275,7 +290,15 @@ function TurnView({
         );
       })}
 
-      {pending && pending.toolName === CONTINUE_TOOL && (
+      {pending?.resolve && (
+        <ApprovalMenu
+          toolName={pending.toolName}
+          args={pending.args}
+          onChoice={(id) => pending.resolve?.({ approved: id !== "no", always: id === "always" })}
+        />
+      )}
+
+      {pending && !pending.resolve && pending.toolName === CONTINUE_TOOL && (
         <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
           <Text color="yellow" bold>
             {t("continueAsk", { n: Number(pending.args["iterations"] ?? 0) })}
@@ -284,7 +307,7 @@ function TurnView({
         </Box>
       )}
 
-      {pending && pending.toolName !== CONTINUE_TOOL && (
+      {pending && !pending.resolve && pending.toolName !== CONTINUE_TOOL && (
         <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
           <Text color="yellow" bold>
             {t("destructiveAction", { call: `${pending.toolName}(${JSON.stringify(pending.args)})` })}
@@ -352,7 +375,7 @@ async function showBanner(state: RuntimeState): Promise<void> {
 
 async function runTurnConfig(state: RuntimeState, turn: TurnConfig, askApproval: Approver): Promise<void> {
   await new Promise<void>((resolve) => {
-    render(<TurnView state={state} turn={turn} askApproval={askApproval} onDone={resolve} />);
+    render(<TurnView state={state} turn={turn} askApproval={askApproval} onDone={resolve} />, { exitOnCtrlC: false });
   });
 }
 
@@ -571,6 +594,132 @@ async function runRepl(state: RuntimeState): Promise<void> {
   if (!closed) rl.close();
 }
 
+// ANSI styling for the plain-text parts (rule and prompt), which are printed outside Ink.
+const ESC = String.fromCharCode(27);
+const ANSI_DIM = `${ESC}[2m`;
+const ANSI_BOLD_CYAN = `${ESC}[1;36m`;
+const ANSI_RESET = `${ESC}[0m`;
+
+/** Dim horizontal rule the width of the terminal; separates turns the way a boxed UI would. */
+function rule(): string {
+  const width = Math.max(20, Math.min(process.stdout.columns ?? 80, 120));
+  return `${ANSI_DIM}${"─".repeat(width)}${ANSI_RESET}`;
+}
+
+const TTY_PROMPT = `${ANSI_BOLD_CYAN}❯${ANSI_RESET} `;
+
+/**
+ * Reads one line with a fresh readline interface, then closes it. On a TTY the interface must not
+ * exist while a turn runs: readline and Ink would both consume the same keystrokes (echoing letters
+ * and submitting lines while the approval menu is waiting for a key). Returns `null` on Ctrl+C/Ctrl+D.
+ */
+function promptLine(history: string[]): Promise<{ line: string | null; history: string[] }> {
+  return new Promise((resolve) => {
+    // Ink releases stdin when a turn ends; without this the process could exit while we wait for input.
+    process.stdin.ref();
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      prompt: TTY_PROMPT,
+      history,
+      historySize: 200,
+      terminal: true,
+    });
+    let answered = false;
+    rl.once("line", (line) => {
+      answered = true;
+      // `history` exists at runtime (newest first) but is missing from the Node typings we build against.
+      const updated = (rl as unknown as { history: string[] }).history;
+      rl.close();
+      resolve({ line, history: updated });
+    });
+    rl.once("close", () => {
+      if (!answered) resolve({ line: null, history });
+    });
+    console.log(rule());
+    rl.prompt();
+  });
+}
+
+/**
+ * Interactive REPL for a real terminal. Unlike `runRepl` (piped input), a turn is awaited, so the
+ * approval menu and ESC/Ctrl+C get the keyboard to themselves while the agent works.
+ */
+async function runReplTty(state: RuntimeState): Promise<void> {
+  await showBanner(state);
+  console.log(t("replHint"));
+  if (isPeakHour(new Date())) {
+    console.log(t("peakWarning"));
+  }
+
+  // ESC or Ctrl+C interrupts the running turn; nothing is listening for a turn while the prompt waits.
+  const abortRef: { current: AbortController | null } = { current: null };
+  readline.emitKeypressEvents(process.stdin);
+  process.stdin.on("keypress", (_str, key: { name?: string; ctrl?: boolean } | undefined) => {
+    if (abortRef.current && (key?.name === "escape" || (key?.ctrl === true && key.name === "c"))) {
+      abortRef.current.abort();
+    }
+  });
+
+  // Never called on a TTY: TurnView shows the menu itself. It only satisfies the type.
+  const menuOnly: Approver = async () => ({ approved: false, always: false });
+
+  const runTurnOf = async (run: (signal: AbortSignal) => Promise<void>): Promise<void> => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+    try {
+      await run(controller.signal);
+    } finally {
+      abortRef.current = null;
+    }
+  };
+
+  let history: string[] = [];
+  for (;;) {
+    const answer = await promptLine(history);
+    history = answer.history;
+    if (answer.line === null) break;
+    const line = answer.line.trim();
+    if (!line) continue;
+
+    if (line.startsWith("/plan ")) {
+      const task = line.slice("/plan ".length).trim();
+      if (!task) {
+        console.log(t("usageLine", { syntax: "/plan <task>" }));
+        continue;
+      }
+      await runTurnOf((signal) => runPlanTask(state, task, menuOnly, signal));
+      continue;
+    }
+
+    if (line === "/paste" || line.startsWith("/paste ")) {
+      const extra = line.slice("/paste".length).trim();
+      try {
+        const destDir = path.join(state.cwd, ".tandem", "tmp");
+        await mkdir(destDir, { recursive: true });
+        const destPath = path.join(destDir, `paste-${Date.now()}.png`);
+        if (!(await saveClipboardImage(destPath))) {
+          console.log(t("pasteNoImage"));
+          continue;
+        }
+        const relPath = path.relative(state.cwd, destPath);
+        const text = `[image pasted from the clipboard: ${relPath}] ${extra || "Look at the image and describe what you see."}`;
+        await runTurnOf((signal) => runTurn(state, text, menuOnly, signal));
+      } catch (err) {
+        console.log(t("errorPrefix", { message: describeError(err) }));
+      }
+      continue;
+    }
+
+    if (line.startsWith("/")) {
+      if ((await handleCommand(line, state)) === "exit") break;
+      continue;
+    }
+
+    await runTurnOf((signal) => runTurn(state, line, menuOnly, signal));
+  }
+}
+
 interface ParsedArgv {
   prompt: string;
   resume: boolean;
@@ -723,12 +872,15 @@ async function main(): Promise<void> {
   }
 
   if (parsed.prompt) {
-    const approver = createLineApprover();
+    // On a TTY the turn shows its own approval menu; the line reader is only for piped input.
+    const approver = process.stdin.isTTY
+      ? { approve: (async () => ({ approved: false, always: false })) as Approver, close: () => {} }
+      : createLineApprover();
     const controller = new AbortController();
     if (process.stdin.isTTY) {
       readline.emitKeypressEvents(process.stdin);
-      process.stdin.on("keypress", (_str, key: { name?: string } | undefined) => {
-        if (key?.name === "escape") controller.abort();
+      process.stdin.on("keypress", (_str, key: { name?: string; ctrl?: boolean } | undefined) => {
+        if (key?.name === "escape" || (key?.ctrl === true && key.name === "c")) controller.abort();
       });
     }
     if (parsed.plan) {
@@ -737,6 +889,8 @@ async function main(): Promise<void> {
       await runTurn(state, parsed.prompt, approver.approve, controller.signal);
     }
     approver.close();
+  } else if (process.stdin.isTTY && process.stdout.isTTY) {
+    await runReplTty(state);
   } else {
     await runRepl(state);
   }

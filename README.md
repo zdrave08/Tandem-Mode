@@ -75,6 +75,12 @@ test. Reported as-is, not adjusted to fit expectations.
   yellow, then red, as you approach the budget or the limit.
 - **Readable tool output** — `edit` shows a red/green diff, `read_file`, `search`
   and `list_dir` collapse to a one-line summary (`120 lines read`, `no matches`).
+- **Approval menu** — in a terminal, an action that needs approval opens a boxed
+  prompt (the diff for an edit, the full command for the shell) with *Yes / Yes,
+  don't ask again for this tool / No*. Pick with ↑/↓ and Enter, with `1`–`3`, or
+  with `y` / `a` / `n`; Esc denies. Turns are separated by a rule and the next
+  prompt is a plain `❯` line with history (↑/↓). With piped input the old `y/n/a`
+  line prompt is used.
 - **ESC to interrupt** — cancels the in-flight call (and any running shell
   command) cleanly, keeping whatever was generated so far.
 - **Cross-platform** — the shell tool runs PowerShell natively on Windows and
